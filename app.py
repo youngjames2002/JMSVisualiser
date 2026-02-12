@@ -18,6 +18,7 @@ if "selected_bundle" not in st.session_state:
 st.title("Bundle Data Visualiser - Admin View")
 
 # load data from sheet
+# !!!! CHANGE THIS WHEN SWITCHING MACHINES !!!!
 filepath = "C:\\Users\\james\\JMS Metaltec\\JMS Engineering Team - JMS Engineering Team SharePoint\\JMS Master Schedule\\testAutomation\\bundleStagingSheet.xlsx"
 df = load_data(filepath)
 df = add_date_columns(df)
