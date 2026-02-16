@@ -35,12 +35,13 @@ total_folding, flat_cutting, tube_cutting = calculate_totals(filtered_df)
 render_at_a_glance(flat_cutting, tube_cutting, total_folding)
 
 # render cards section
-render_cards_section()
+render_cards_titles()
 col1, col2, col3 = st.columns(3)
 late_df, week_df, future_df = split_by_urgency(filtered_df)
 render_cards(late_df, col1)
 render_cards(week_df, col2)
 render_cards(future_df, col3)
+render_side_panel(df)
 
 # bar chart of hours due by day
 render_bar_chart(filtered_df)

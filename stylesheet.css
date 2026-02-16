@@ -7,6 +7,13 @@
     transition: 0.2s ease;
 }
 
+.bundle-card.selected {
+    background-color: lightgrey;
+    transform: translateY(-3px);
+    box-shadow: 0 6px 18px rgba(0,0,0,0.15);
+    border-left-width: 12px;
+}
+
 .bundle-card:hover {
     transform: translateY(-3px);
     box-shadow: 0 8px 18px rgba(0,0,0,0.12);

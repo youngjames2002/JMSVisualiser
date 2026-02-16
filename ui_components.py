@@ -79,7 +79,7 @@ def render_cards(dataframe, column):
     for i in range(len(dataframe)):
         row = dataframe.iloc[i]
 
-        bundle_id = f"{row.name}"
+        bundle_id =  bundle_id = f"{row.name}"
         bundle_name = row["Bundle/Job"]
         due_raw = row["Earliest Process Date"]
         days_diff = row["Days Late"]
@@ -105,9 +105,13 @@ def render_cards(dataframe, column):
         else:
             band_color = "#28a745"
 
+        # checks if details side panel is showing
+        is_selected = (st.session_state.selected_bundle == row.name)
+        card_class = "bundle-card selected" if is_selected else "bundle-card"
+
         # Card container
         column.markdown(f"""
-            <div class="bundle-card" style="border-left: 8px solid {band_color};">
+            <div class="{card_class}" style="border-left:8px solid {band_color};">
                 <div class="bundle-title">{bundle_name}</div>
                 <div class="bundle-date">Due Date: {due_date}</div>
                 <div class="bundle-type">{bundle_type}</div>
@@ -126,7 +130,7 @@ def render_cards(dataframe, column):
             else:
                 # Otherwise open it
                 st.session_state.selected_bundle = row.name
-            st.rerun()
+            st.rerun()       
 
 def render_at_a_glance(flat_hours, tube_hours, folding_hours):
     st.markdown("<h2>At a Glance</h2>", unsafe_allow_html=True)
@@ -139,7 +143,7 @@ def render_at_a_glance(flat_hours, tube_hours, folding_hours):
     with col2:
         render_folding_hours(folding_hours)
 
-def render_cards_section():
+def render_cards_titles():
     st.markdown("<h2>All Bundles</h2>", unsafe_allow_html=True)
     col1, col2, col3 = st.columns(3)
     col1.markdown("### 🔴 Late")
@@ -268,3 +272,70 @@ def render_progress_bar(df):
     completed = (df["Completed?"] == "Yes").sum()
     progress = completed / total if total > 0 else 0
     st.progress(progress,"Progress Bar Task Completion: "+ str(completed)+ "/"+ str(total)+ ", "+ str(progress*100)+ "%")
+
+def render_side_panel(df):
+    if st.session_state.selected_bundle is not None:
+
+        selected_row = df.loc[st.session_state.selected_bundle]
+
+        st.markdown(
+            """
+            <style>
+            .side-panel {
+            position: fixed;
+            top: 0;
+            right: 0;
+            width: 420px;
+            height: 100vh;
+            background-color: white;
+            box-shadow: -6px 0 20px rgba(0,0,0,0.15);
+            padding: 30px;
+            overflow-y: auto;
+            z-index: 9999;
+            color: black;
+            }
+            .close-btn {
+            background-color: #f44336;
+            color: white;
+            padding: 6px 12px;
+            border-radius: 6px;
+            text-decoration: none;
+            font-size: 14px;
+            }
+            </style>
+            """,
+            unsafe_allow_html=True
+        )
+
+        panel_html = f"""
+        <div class="side-panel">
+        <br>
+        <h3>Bundle Details</h3>
+        """
+
+        list_details_shown = [
+        "Bundle/Job",
+        "Customer",
+        "Date Added",
+        "Type",
+        "Earliest Process Date",
+        "Estimated Bundle Time (Hours)",
+        "Welding Required?",
+        "Sales Orders Included in Bundle",
+        "Machine",
+        "Finishing Required?",
+        "Assign to:",
+        "Folding Required?"
+    ]
+        for field in list_details_shown:
+            value = selected_row.get(field, "—")
+
+            if field == "Folding Required?" and str(value).lower() == "yes":
+                panel_html += f"<p><b>{field}:</b><br>{value}</p>"
+                panel_html += f"<p><b>Estimated Fold Time (Hours):</b><br>{selected_row.get('Estimated Fold Time (Hours)', '—')}</p>"
+                panel_html += f"<p><b>Fold Site:</b><br>{selected_row.get('Fold Site', '—')}</p>"
+            else:
+                panel_html += f"<p><b>{field}:</b><br>{value}</p>"
+        
+        panel_html += "</div>" 
+        st.markdown(panel_html, unsafe_allow_html=True)
