@@ -27,9 +27,6 @@ df = add_date_columns(df)
 late_only, selected_customers, selected_machines, customers, machines = render_filter_section(df)
 filtered_df = apply_filters(df, late_only, selected_customers, selected_machines, customers, machines)
 
-# calculate cut/fold hours for at a glance
-total_folding, flat_cutting, tube_cutting = calculate_totals(filtered_df)
-
 # render at a glance section
 total_folding, flat_cutting, tube_cutting = calculate_totals(filtered_df)
 render_at_a_glance(flat_cutting, tube_cutting, total_folding)
