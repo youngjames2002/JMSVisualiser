@@ -209,3 +209,37 @@ def render_bar_chart(df):
     )
 
     st.plotly_chart(fig, use_container_width=True)
+
+def render_filter_section(df):
+    st.markdown("## Filters")
+
+    filter_col1, filter_col2, filter_col3 = st.columns(3)
+
+    df["Customer"] = df["Customer"].fillna("No Customer Assigned")
+    df["Machine"] = df["Machine"].fillna("No Machine Assigned")
+
+    # Late toggle
+    with filter_col1:
+        late_only = st.toggle("Show Late Bundles Only")
+
+    # Customer multi-select
+    with filter_col2:
+        customers = sorted(df["Customer"].dropna().unique())
+        selected_customers = st.multiselect(
+            "Select Customer(s)",
+            options=customers,
+            default=customers,
+            key="customer_filter"
+        )
+
+    # Machine multi-select
+    with filter_col3:
+        machines = sorted(df["Machine"].dropna().unique())
+        selected_machines = st.multiselect(
+            "Select Machine(s)",
+            options=machines,
+            default=machines,
+            key="machine_filter"
+        )
+
+    return (late_only, selected_customers, selected_machines, customers, machines)

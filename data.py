@@ -22,3 +22,24 @@ def split_by_urgency(df):
     week_df = df[(df["Days Late"] >= 0) & (df["Days Late"] <= 7)]
     future_df = df[df["Days Late"] > 7]
     return late_df, week_df, future_df
+
+def apply_filters(df, late_only, selected_customers, selected_machines, customers, machines):
+    filtered_df = df.copy()
+
+    # Apply late filter
+    if late_only:
+        filtered_df = filtered_df[filtered_df["Days Late"] < 0]
+
+    # Apply customer filter
+    if set(selected_customers) != set(customers):
+        filtered_df = filtered_df[
+           filtered_df["Customer"].isin(selected_customers)
+        ]
+
+    # Apply machine filter
+    if set(selected_machines) != set(machines):
+        filtered_df = filtered_df[
+         filtered_df["Machine"].isin(selected_machines)
+        ]
+
+    return filtered_df
