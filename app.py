@@ -45,3 +45,6 @@ col1, col2, col3 = st.columns(3)
 render_cards(late_df, col1)
 render_cards(week_df, col2)
 render_cards(future_df, col3)
+
+# bar chart of hours due by day
+render_bar_chart(df)

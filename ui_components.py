@@ -2,6 +2,7 @@
 import streamlit as st
 import plotly.express as px
 import pandas as pd
+from metrics import *
 
 def render_cutting_pie_chart(flat_hours, tube_hours):
     pie_data = pd.DataFrame({
@@ -51,7 +52,13 @@ def render_cutting_pie_chart(flat_hours, tube_hours):
     st.plotly_chart(fig, use_container_width=True)
 
 def render_folding_hours(folding_hours):
+    folding_capacity = 30 #random number
+
     st.markdown("### Total Estimated Folding Hours")
+    if folding_hours > folding_capacity:
+        text_colour = 'red'
+    else:
+        text_colour = 'black'
 
     st.markdown(f"""
     <div style="
@@ -60,9 +67,9 @@ def render_folding_hours(folding_hours):
         border-radius: 12px;
         text-align: center;
         box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-        color: black;
+        color: {text_colour};
     ">
-        <h1 style="margin:0;">{round(folding_hours, 1)}</h1>
+        <h1 style="margin:0;">{round(folding_hours, 1)}/{round(folding_capacity,1)}</h1>
         <p style="margin:0; color: grey;">hours</p>
     </div>
     """, unsafe_allow_html=True)
@@ -137,3 +144,68 @@ def render_cards_section():
     col1.markdown("### 🔴 Late")
     col2.markdown("### 🟡 Due This Week")
     col3.markdown("### 🟢 Future")
+
+def render_bar_chart(df):
+    summary = bar_chart_hours_by_date(df)
+
+    # Melt to stacked format
+    melted = summary.melt(
+        id_vars=["Earliest Process Date", "Is Late"],
+        value_vars=[
+            "Estimated Bundle Time (Hours)",
+            "Estimated Fold Time (Hours)"
+        ],
+        var_name="Type",
+        value_name="Hours"
+    )
+
+    # Clean labels
+    melted["Type"] = melted["Type"].replace({
+        "Estimated Bundle Time (Hours)": "Cutting",
+        "Estimated Fold Time (Hours)": "Folding"
+    })
+
+    # Create colour grouping
+    melted["Colour Group"] = melted["Is Late"].apply(
+        lambda x: "Late" if x else "On Time"
+    )
+
+    melted["Display Date"] = melted["Earliest Process Date"].dt.strftime("%d/%m/%Y")
+
+    fig = px.bar(
+        melted,
+        x="Display Date",
+        y="Hours",
+        color="Colour Group",      # controls red vs normal
+        pattern_shape="Type",      # visually splits Cutting/Folding
+        barmode="stack"
+    )
+
+    # Force colours
+    fig.update_traces(marker_line_width=0)
+
+    fig.update_layout(
+        title="Total Hours by Date (Cutting + Folding)",
+        xaxis_title="Date",
+        yaxis_title="Total Hours",
+        height=500
+    )
+
+    fig.update_layout(
+        coloraxis_showscale=False
+    )
+
+    fig.update_traces(
+        marker=dict(
+            color=None
+        )
+    )
+
+    # Manual color mapping
+    fig.for_each_trace(
+        lambda trace: trace.update(
+            marker_color="red" if "Late" in trace.name else "#2E86C1"
+        )
+    )
+
+    st.plotly_chart(fig, use_container_width=True)
