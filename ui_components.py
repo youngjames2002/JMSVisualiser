@@ -145,12 +145,13 @@ def render_at_a_glance(flat_hours, tube_hours, folding_hours):
 
 def render_cards_titles():
     st.markdown("<h2>All Bundles</h2>", unsafe_allow_html=True)
-    col1, col2, col3 = st.columns(3)
+    col1, col2, col3, col4 = st.columns(4)
     col1.markdown("### 🔴 Late")
     col2.markdown("### 🟡 Due This Week")
     col3.markdown("### 🟢 Future")
+    col4.markdown('### Charts')
 
-def render_bar_chart(df):
+def render_bar_chart(df, column):
     melted = bar_chart_hours_by_date(df)
 
     fig = px.bar(
@@ -189,9 +190,9 @@ def render_bar_chart(df):
         )
     )
 
-    st.plotly_chart(fig, use_container_width=True)
+    column.plotly_chart(fig, use_container_width=True)
 
-def render_line_chart(df):
+def render_line_chart(df, column):
     melted = bar_chart_hours_by_date(df)
     daily_totals = sum_hours_by_date(melted)
     
@@ -206,7 +207,7 @@ def render_line_chart(df):
     else:
         default_index = len(available_months) - 1  # fallback to latest available month
 
-    selected_month = st.selectbox(
+    selected_month = column.selectbox(
         "Select Month",
         available_months,
         format_func=lambda x: x.strftime("%B %Y"),
@@ -230,7 +231,7 @@ def render_line_chart(df):
     )
 
     fig.update_yaxes(range=[0, monthly_data["Cumulative Hours"].max() * 1.05])
-    st.plotly_chart(fig, use_container_width=True)
+    column.plotly_chart(fig, use_container_width=True)
     
 
 def render_filter_section(df):
@@ -267,11 +268,11 @@ def render_filter_section(df):
 
     return (late_only, selected_customers, selected_machines, customers, machines)
 
-def render_progress_bar(df):
+def render_progress_bar(df, column):
     total = len(df)
     completed = (df["Completed?"] == "Yes").sum()
     progress = completed / total if total > 0 else 0
-    st.progress(progress,"Progress Bar Task Completion: "+ str(completed)+ "/"+ str(total)+ ", "+ str(progress*100)+ "%")
+    column.progress(progress,"Progress Bar Task Completion: "+ str(completed)+ "/"+ str(total)+ ", "+ str(progress*100)+ "%")
 
 def render_side_panel(df):
     if st.session_state.selected_bundle is not None:

@@ -36,7 +36,7 @@ render_at_a_glance(flat_cutting, tube_cutting, total_folding)
 
 # render cards section
 render_cards_titles()
-col1, col2, col3 = st.columns(3)
+col1, col2, col3, col4 = st.columns(4)
 late_df, week_df, future_df = split_by_urgency(filtered_df)
 render_cards(late_df, col1)
 render_cards(week_df, col2)
@@ -44,8 +44,8 @@ render_cards(future_df, col3)
 render_side_panel(df)
 
 # bar chart of hours due by day
-render_bar_chart(filtered_df)
-render_line_chart(filtered_df)
+render_bar_chart(filtered_df, col4)
+render_line_chart(filtered_df, col4)
 
 # progress bar of complete hours
-render_progress_bar(filtered_df)
+render_progress_bar(filtered_df, col4)
