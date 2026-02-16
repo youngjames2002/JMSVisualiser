@@ -31,13 +31,7 @@ filtered_df = apply_filters(df, late_only, selected_customers, selected_machines
 total_folding, flat_cutting, tube_cutting = calculate_totals(filtered_df)
 
 # render at a glance section
-st.markdown("<h2>At a Glance</h2>", unsafe_allow_html=True)
-# late_only = st.toggle("Show Late Bundles Only")
-if late_only:
-    metrics_df = filtered_df[filtered_df["Is Late"] == True]
-else:
-    metrics_df = filtered_df
-total_folding, flat_cutting, tube_cutting = calculate_totals(metrics_df)
+total_folding, flat_cutting, tube_cutting = calculate_totals(filtered_df)
 render_at_a_glance(flat_cutting, tube_cutting, total_folding)
 
 # render cards section

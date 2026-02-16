@@ -129,6 +129,7 @@ def render_cards(dataframe, column):
             st.rerun()
 
 def render_at_a_glance(flat_hours, tube_hours, folding_hours):
+    st.markdown("<h2>At a Glance</h2>", unsafe_allow_html=True)
     col1, col2 = st.columns([2,1])
 
     with col1:
