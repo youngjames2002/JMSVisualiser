@@ -190,14 +190,23 @@ def render_bar_chart(df):
 def render_line_chart(df):
     melted = bar_chart_hours_by_date(df)
     daily_totals = sum_hours_by_date(melted)
-
+    
     # Create month selector (sorted chronologically)
     available_months = sorted(daily_totals["YearMonth"].unique())
+
+    #default to show current month
+    current_month = pd.Timestamp.today().to_period("M")
+
+    if current_month in available_months:
+        default_index = available_months.index(current_month)
+    else:
+        default_index = len(available_months) - 1  # fallback to latest available month
 
     selected_month = st.selectbox(
         "Select Month",
         available_months,
-        format_func=lambda x: x.strftime("%B %Y")
+        format_func=lambda x: x.strftime("%B %Y"),
+        index=default_index
     )
     monthly_data = cumulative_data_line_chart(daily_totals, selected_month)
 
@@ -253,3 +262,9 @@ def render_filter_section(df):
         )
 
     return (late_only, selected_customers, selected_machines, customers, machines)
+
+def render_progress_bar(df):
+    total = len(df)
+    completed = (df["Completed?"] == "Yes").sum()
+    progress = completed / total if total > 0 else 0
+    st.progress(progress,"Progress Bar Task Completion: "+ str(completed)+ "/"+ str(total)+ ", "+ str(progress*100)+ "%")
