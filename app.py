@@ -28,8 +28,7 @@ late_only, selected_customers, selected_machines, customers, machines = render_f
 filtered_df = apply_filters(df, late_only, selected_customers, selected_machines, customers, machines)
 
 # render at a glance section
-total_folding, flat_cutting, tube_cutting = calculate_totals(filtered_df)
-render_at_a_glance(flat_cutting, tube_cutting, total_folding)
+render_at_a_glance(filtered_df)
 
 # render cards section
 render_cards_titles()

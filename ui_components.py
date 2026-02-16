@@ -132,16 +132,17 @@ def render_cards(dataframe, column):
                 st.session_state.selected_bundle = row.name
             st.rerun()       
 
-def render_at_a_glance(flat_hours, tube_hours, folding_hours):
+def render_at_a_glance(df):
+    total_folding, flat_cutting, tube_cutting = calculate_totals(df)
     st.markdown("<h2>At a Glance</h2>", unsafe_allow_html=True)
     col1, col2 = st.columns([2,1])
 
     with col1:
         st.markdown("### Total Estimated Cutting Hours")
-        render_cutting_pie_chart(flat_hours, tube_hours)
+        render_cutting_pie_chart(flat_cutting, tube_cutting)
 
     with col2:
-        render_folding_hours(folding_hours)
+        render_folding_hours(total_folding)
 
 def render_cards_titles():
     st.markdown("<h2>All Bundles</h2>", unsafe_allow_html=True)
