@@ -3,6 +3,7 @@ import streamlit as st
 import plotly.express as px
 import pandas as pd
 from metrics import *
+from data import *
 
 def render_cutting_pie_chart(flat_hours, tube_hours):
     pie_data = pd.DataFrame({
@@ -238,7 +239,7 @@ def render_line_chart(df, column):
 def render_filter_section(df):
     st.markdown("## Filters")
 
-    filter_col1, filter_col2, filter_col3 = st.columns(3)
+    filter_col1, filter_col2, filter_col3, filter_col4 = st.columns(4)
 
     df["Customer"] = df["Customer"].fillna("No Customer Assigned")
     df["Machine"] = df["Machine"].fillna("No Machine Assigned")
@@ -267,7 +268,13 @@ def render_filter_section(df):
             key="machine_filter"
         )
 
-    return (late_only, selected_customers, selected_machines, customers, machines)
+    # incomplete toggle
+    with filter_col4:
+        incomplete_only = st.toggle("Show Incomplete Bundles Only", value=True)
+
+    filtered_df = apply_filters(df, late_only, incomplete_only, selected_customers, selected_machines, customers, machines)
+
+    return filtered_df
 
 def render_progress_bar(df, column):
     total = len(df)

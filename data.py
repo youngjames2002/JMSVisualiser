@@ -23,7 +23,7 @@ def split_by_urgency(df):
     future_df = df[df["Days Late"] > 7]
     return late_df, week_df, future_df
 
-def apply_filters(df, late_only, selected_customers, selected_machines, customers, machines):
+def apply_filters(df, late_only, incomplete_only, selected_customers, selected_machines, customers, machines):
     filtered_df = df.copy()
 
     # Apply late filter
@@ -41,5 +41,9 @@ def apply_filters(df, late_only, selected_customers, selected_machines, customer
         filtered_df = filtered_df[
          filtered_df["Machine"].isin(selected_machines)
         ]
+
+    # apply incomplete filter
+    if incomplete_only:
+        filtered_df = filtered_df[filtered_df["Completed?"] == "No"]
 
     return filtered_df

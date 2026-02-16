@@ -24,8 +24,8 @@ df = load_data(filepath)
 df = add_date_columns(df)
 
 # filter by lateness, customer and machine
-late_only, selected_customers, selected_machines, customers, machines = render_filter_section(df)
-filtered_df = apply_filters(df, late_only, selected_customers, selected_machines, customers, machines)
+# tidy this into better functions and add filter for complete or not (in same manner as late filter)
+filtered_df = render_filter_section(df)
 
 # render at a glance section
 render_at_a_glance(filtered_df)
