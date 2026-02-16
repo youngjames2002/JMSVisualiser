@@ -147,31 +147,7 @@ def render_cards_section():
     col3.markdown("### 🟢 Future")
 
 def render_bar_chart(df):
-    summary = bar_chart_hours_by_date(df)
-
-    # Melt to stacked format
-    melted = summary.melt(
-        id_vars=["Earliest Process Date", "Is Late"],
-        value_vars=[
-            "Estimated Bundle Time (Hours)",
-            "Estimated Fold Time (Hours)"
-        ],
-        var_name="Type",
-        value_name="Hours"
-    )
-
-    # Clean labels
-    melted["Type"] = melted["Type"].replace({
-        "Estimated Bundle Time (Hours)": "Cutting",
-        "Estimated Fold Time (Hours)": "Folding"
-    })
-
-    # Create colour grouping
-    melted["Colour Group"] = melted["Is Late"].apply(
-        lambda x: "Late" if x else "On Time"
-    )
-
-    melted["Display Date"] = melted["Earliest Process Date"].dt.strftime("%d/%m/%Y")
+    melted = bar_chart_hours_by_date(df)
 
     fig = px.bar(
         melted,
@@ -210,6 +186,39 @@ def render_bar_chart(df):
     )
 
     st.plotly_chart(fig, use_container_width=True)
+
+def render_line_chart(df):
+    melted = bar_chart_hours_by_date(df)
+    daily_totals = sum_hours_by_date(melted)
+
+    # Create month selector (sorted chronologically)
+    available_months = sorted(daily_totals["YearMonth"].unique())
+
+    selected_month = st.selectbox(
+        "Select Month",
+        available_months,
+        format_func=lambda x: x.strftime("%B %Y")
+    )
+    monthly_data = cumulative_data_line_chart(daily_totals, selected_month)
+
+    # Plot
+    fig = px.line(
+        monthly_data,
+        x="Display Date",
+        y="Cumulative Hours",
+        markers=True
+    )
+
+    fig.update_layout(
+        title=f"Cumulative Hours - {selected_month.strftime('%B %Y')}",
+        xaxis_title="Date",
+        yaxis_title="Cumulative Hours",
+        height=500
+    )
+
+    fig.update_yaxes(range=[0, monthly_data["Cumulative Hours"].max() * 1.05])
+    st.plotly_chart(fig, use_container_width=True)
+    
 
 def render_filter_section(df):
     st.markdown("## Filters")

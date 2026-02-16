@@ -44,3 +44,4 @@ render_cards(future_df, col3)
 
 # bar chart of hours due by day
 render_bar_chart(filtered_df)
+render_line_chart(filtered_df)
