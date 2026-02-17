@@ -77,10 +77,8 @@ def render_folding_hours(folding_hours):
 
 
 def render_cards(dataframe, column):
-    for i in range(len(dataframe)):
-        row = dataframe.iloc[i]
+    for _, row in dataframe.iterrows():
 
-        bundle_id =  bundle_id = f"{row.name}"
         bundle_name = row["Bundle/Job"]
         due_raw = row["Earliest Process Date"]
         days_diff = row["Days Late"]
@@ -107,7 +105,7 @@ def render_cards(dataframe, column):
             band_color = "#28a745"
 
         # checks if details side panel is showing
-        is_selected = (st.session_state.selected_bundle == row.name)
+        is_selected = (st.session_state.selected_bundle == bundle_name)
         card_class = "bundle-card selected" if is_selected else "bundle-card"
 
         # Card container
@@ -120,17 +118,15 @@ def render_cards(dataframe, column):
         """, unsafe_allow_html=True)
 
         # Click button
-        button_label = ("Close Details"
-            if st.session_state.selected_bundle == row.name
-            else "View Details"
-        )
-        if column.button(button_label, key=f"btn_{bundle_id}"):
-            if st.session_state.selected_bundle == row.name:
+        button_label = "Close Details" if is_selected else "View Details"
+
+        if column.button(button_label, key=f"btn_{bundle_name}"):
+            if is_selected:
                 # If already open → close it
                 st.session_state.selected_bundle = None
             else:
                 # Otherwise open it
-                st.session_state.selected_bundle = row.name
+                st.session_state.selected_bundle = bundle_name
             st.rerun()       
 
 def render_at_a_glance(df):
@@ -283,14 +279,22 @@ def render_progress_bar(df, column):
     column.progress(progress,"Progress Bar Task Completion: "+ str(completed)+ "/"+ str(total)+ ", "+ str(progress*100)+ "%")
 
 def render_side_panel(df):
-    if st.session_state.selected_bundle is not None:
+    selected_bundle = st.session_state.get("selected_bundle")
 
-        selected_row = df.loc[st.session_state.selected_bundle]
+    if selected_bundle is None:
+        return
 
-        st.markdown(
-            """
-            <style>
-            .side-panel {
+    # Find row using Bundle/Job
+    selected_rows = df[df["Bundle/Job"] == selected_bundle]
+
+    if selected_rows.empty:
+        return  # In case filters removed it
+
+    selected_row = selected_rows.iloc[0]
+
+    st.markdown("""
+        <style>
+        .side-panel {
             position: fixed;
             top: 0;
             right: 0;
@@ -302,27 +306,17 @@ def render_side_panel(df):
             overflow-y: auto;
             z-index: 9999;
             color: black;
-            }
-            .close-btn {
-            background-color: #f44336;
-            color: white;
-            padding: 6px 12px;
-            border-radius: 6px;
-            text-decoration: none;
-            font-size: 14px;
-            }
-            </style>
-            """,
-            unsafe_allow_html=True
-        )
+        }
+        </style>
+    """, unsafe_allow_html=True)
 
-        panel_html = f"""
-        <div class="side-panel">
+    panel_html = """
+    <div class="side-panel">
         <br>
         <h3>Bundle Details</h3>
-        """
+    """
 
-        list_details_shown = [
+    list_details_shown = [
         "Bundle/Job",
         "Customer",
         "Date Added",
@@ -336,15 +330,17 @@ def render_side_panel(df):
         "Assign to:",
         "Folding Required?"
     ]
-        for field in list_details_shown:
-            value = selected_row.get(field, "—")
 
-            if field == "Folding Required?" and str(value).lower() == "yes":
-                panel_html += f"<p><b>{field}:</b><br>{value}</p>"
-                panel_html += f"<p><b>Estimated Fold Time (Hours):</b><br>{selected_row.get('Estimated Fold Time (Hours)', '—')}</p>"
-                panel_html += f"<p><b>Fold Site:</b><br>{selected_row.get('Fold Site', '—')}</p>"
-            else:
-                panel_html += f"<p><b>{field}:</b><br>{value}</p>"
-        
-        panel_html += "</div>" 
-        st.markdown(panel_html, unsafe_allow_html=True)
+    for field in list_details_shown:
+        value = selected_row.get(field, "—")
+
+        if field == "Folding Required?" and str(value).lower() == "yes":
+            panel_html += f"<p><b>{field}:</b><br>{value}</p>"
+            panel_html += f"<p><b>Estimated Fold Time (Hours):</b><br>{selected_row.get('Estimated Fold Time (Hours)', '—')}</p>"
+            panel_html += f"<p><b>Fold Site:</b><br>{selected_row.get('Fold Site', '—')}</p>"
+        else:
+            panel_html += f"<p><b>{field}:</b><br>{value}</p>"
+
+    panel_html += "</div>"
+
+    st.markdown(panel_html, unsafe_allow_html=True)

@@ -37,7 +37,7 @@ late_df, week_df, future_df = split_by_urgency(filtered_df)
 render_cards(late_df, col1)
 render_cards(week_df, col2)
 render_cards(future_df, col3)
-render_side_panel(df)
+render_side_panel(filtered_df)
 
 # bar chart of hours due by day
 render_bar_chart(filtered_df, col4)
