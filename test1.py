@@ -42,3 +42,5 @@ st.markdown("""
             """, unsafe_allow_html=True)
 
 st.markdown('<div style="float: right"><p style="color:blue">right blue</p></div>', unsafe_allow_html=True)
+
+# TEST CHANGE API PRACTICE
