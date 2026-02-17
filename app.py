@@ -23,13 +23,19 @@ filepath = "C:\\Users\\james\\JMS Metaltec\\JMS Engineering Team - JMS Engineeri
 df = load_data(filepath)
 df = add_date_columns(df)
 
+# at a glance placholder
+at_a_glance_container = st.container()
+
 # filter by lateness, customer and machine
-# tidy this into better functions and add filter for complete or not (in same manner as late filter)
-filtered_df = render_filter_section(df)
+st.divider()
+late_only, incomplete_only, selected_customers, selected_machines = render_filter_section(df)
+st.divider()
+filtered_df = apply_filters(df, late_only, incomplete_only, selected_customers, selected_machines)
 
 # render at a glance section
 late_df, week_df, future_df = split_by_urgency(filtered_df)
-render_at_a_glance(filtered_df,late_df, week_df, future_df)
+with at_a_glance_container:
+    render_at_a_glance(filtered_df,late_df, week_df, future_df)
 
 # render cards section
 render_cards_titles()

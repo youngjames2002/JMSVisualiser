@@ -136,11 +136,11 @@ def render_at_a_glance(df,late_df, week_df, future_df):
     st.markdown("<h2>At a Glance</h2>", unsafe_allow_html=True)
     col1, col2, col3, col4 = st.columns(4)
 
-    with col1:
+    with col2:
         st.markdown("### Total Estimated Cutting Hours")
         render_cutting_pie_chart(flat_cutting, tube_cutting)
 
-    with col2:
+    with col1:
         render_folding_hours(total_folding)
 
     with col3:
@@ -323,9 +323,7 @@ def render_filter_section(df):
     with filter_col4:
         incomplete_only = st.toggle("Show Incomplete Bundles Only", value=True)
 
-    filtered_df = apply_filters(df, late_only, incomplete_only, selected_customers, selected_machines, customers, machines)
-
-    return filtered_df
+    return late_only, incomplete_only, selected_customers, selected_machines
 
 def render_progress_bar(df, column):
     total = len(df)
