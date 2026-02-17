@@ -109,25 +109,26 @@ def render_cards(dataframe, column):
         card_class = "bundle-card selected" if is_selected else "bundle-card"
 
         # Card container
-        column.markdown(f"""
-            <div class="{card_class}" style="border-left:8px solid {band_color};">
-                <div class="bundle-title">{bundle_name}</div>
-                <div class="bundle-date">Due Date: {due_date}</div>
-                <div class="bundle-type">{bundle_type}</div>
-            </div>
-        """, unsafe_allow_html=True)
+        if row["Completed?"] != "Yes":
+            column.markdown(f"""
+                <div class="{card_class}" style="border-left:8px solid {band_color};">
+                    <div class="bundle-title">{bundle_name}</div>
+                    <div class="bundle-date">Due Date: {due_date}</div>
+                    <div class="bundle-type">{bundle_type}</div>
+                </div>
+            """, unsafe_allow_html=True)
 
-        # Click button
-        button_label = "Close Details" if is_selected else "View Details"
+            # Click button
+            button_label = "Close Details" if is_selected else "View Details"
 
-        if column.button(button_label, key=f"btn_{bundle_name}"):
-            if is_selected:
-                # If already open → close it
-                st.session_state.selected_bundle = None
-            else:
-                # Otherwise open it
-                st.session_state.selected_bundle = bundle_name
-            st.rerun()       
+            if column.button(button_label, key=f"btn_{bundle_name}"):
+                if is_selected:
+                    # If already open → close it
+                    st.session_state.selected_bundle = None
+                else:
+                    # Otherwise open it
+                    st.session_state.selected_bundle = bundle_name
+                st.rerun()       
 
 def render_at_a_glance(df):
     total_folding, flat_cutting, tube_cutting = calculate_totals(df)
