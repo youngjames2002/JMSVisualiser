@@ -276,6 +276,7 @@ def render_progress_bar(df, column):
     total = len(df)
     completed = (df["Completed?"] == "Yes").sum()
     progress = completed / total if total > 0 else 0
+    progress = round(progress,2)
     column.progress(progress,"Progress Bar Task Completion: "+ str(completed)+ "/"+ str(total)+ ", "+ str(progress*100)+ "%")
 
 def render_side_panel(df):
