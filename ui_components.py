@@ -276,8 +276,7 @@ def render_progress_bar(df, column):
     total = len(df)
     completed = (df["Completed?"] == "Yes").sum()
     progress = completed / total if total > 0 else 0
-    progress = round(progress,2)
-    column.progress(progress,"Progress Bar Task Completion: "+ str(completed)+ "/"+ str(total)+ ", "+ str(progress*100)+ "%")
+    column.progress(progress,"Progress Bar Task Completion: "+ str(completed)+ "/"+ str(total)+ ", "+ str(round(progress*100,2))+ "%")
 
 def render_side_panel(df):
     selected_bundle = st.session_state.get("selected_bundle")
