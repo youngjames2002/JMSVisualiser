@@ -28,12 +28,12 @@ df = add_date_columns(df)
 filtered_df = render_filter_section(df)
 
 # render at a glance section
-render_at_a_glance(filtered_df)
+late_df, week_df, future_df = split_by_urgency(filtered_df)
+render_at_a_glance(filtered_df,late_df, week_df, future_df)
 
 # render cards section
 render_cards_titles()
 col1, col2, col3, col4 = st.columns(4)
-late_df, week_df, future_df = split_by_urgency(filtered_df)
 render_cards(late_df, col1)
 render_cards(week_df, col2)
 render_cards(future_df, col3)

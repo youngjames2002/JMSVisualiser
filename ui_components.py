@@ -4,6 +4,7 @@ import plotly.express as px
 import pandas as pd
 from metrics import *
 from data import *
+import plotly.graph_objects as go
 
 def render_cutting_pie_chart(flat_hours, tube_hours):
     pie_data = pd.DataFrame({
@@ -130,10 +131,10 @@ def render_cards(dataframe, column):
                     st.session_state.selected_bundle = bundle_name
                 st.rerun()       
 
-def render_at_a_glance(df):
+def render_at_a_glance(df,late_df, week_df, future_df):
     total_folding, flat_cutting, tube_cutting = calculate_totals(df)
     st.markdown("<h2>At a Glance</h2>", unsafe_allow_html=True)
-    col1, col2 = st.columns([2,1])
+    col1, col2, col3, col4 = st.columns(4)
 
     with col1:
         st.markdown("### Total Estimated Cutting Hours")
@@ -142,6 +143,59 @@ def render_at_a_glance(df):
     with col2:
         render_folding_hours(total_folding)
 
+    with col3:
+        st.markdown("### Ratio of Late Jobs")
+        render_late_status_ratio(late_df, week_df, future_df)
+
+    with col4:
+        st.markdown("### Top Customers by Hours")
+        render_top_customers(df)
+
+def render_late_status_ratio(late_df, week_df, future_df):
+    late_hours = late_df["Estimated Bundle Time (Hours)"].sum()
+    week_hours = week_df["Estimated Bundle Time (Hours)"].sum()
+    future_hours = future_df["Estimated Bundle Time (Hours)"].sum()
+
+    fig = go.Figure()
+
+    fig.add_trace(go.Bar(
+        x=["Late", "This Week", "Future"],
+        y=[late_hours, week_hours, future_hours],
+        marker_color=["#d62728", "#ffbf00", "#2ca02c"]  # red, yellow, green
+    ))
+
+    fig.update_layout(
+        showlegend=False
+    )
+    st.plotly_chart(fig, use_container_width=True)
+
+def render_top_customers(df):
+    top3 = (
+        df.groupby("Customer")["Estimated Bundle Time (Hours)"]
+        .sum()
+        .sort_values(ascending=False)
+        .head(3)
+    )
+    
+    c1, c2, c3 = top3.index
+    c1h, c2h, c3h = top3.values
+
+
+    st.markdown(f"""
+    <div style="
+        background: white;
+        padding: 30px;
+        border-radius: 12px;
+        text-align: center;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+        color: black;
+    ">
+        <h3 style="margin:0;">1. {c1} - {c1h} hours</h3>
+        <h3 style="margin:0;">2. {c2} - {c2h} hours</h3>
+        <h3 style="margin:0;">3. {c3} - {c3h} hours</h3>
+    </div>
+    """, unsafe_allow_html=True)
+        
 def render_cards_titles():
     st.markdown("<h2>All Bundles</h2>", unsafe_allow_html=True)
     col1, col2, col3, col4 = st.columns(4)
