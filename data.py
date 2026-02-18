@@ -1,5 +1,6 @@
 import pandas as pd
 import streamlit as st
+
 def load_data():
     filepath = "C:\\Users\\james\\JMS Metaltec\\JMS Engineering Team - JMS Engineering Team SharePoint\\JMS Master Schedule\\testAutomation\\bundleStagingSheet.xlsx"
     df = pd.read_excel(filepath)
@@ -80,3 +81,4 @@ def capacity_hours(section_name):
         return 190
     else:
         return 0
+    

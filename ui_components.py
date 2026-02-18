@@ -417,26 +417,7 @@ def render_side_panel(df):
 def render_capacity(section_name, df, col):
     col.write(f"## {section_name}")
 
-    # check if we're showing multiple weeks
-    if df.empty:
-        weeks_covered = 1
-    else:
-        today = pd.Timestamp.today().normalize()
-
-        # Calculate week index relative to today
-        week_index = ((df["Earliest Process Date"] - today).dt.days // 7)
-
-        max_week = week_index.max()
-
-        # Ensure minimum of 1 week
-        weeks_covered = max(max_week + 1, 1)
-    
-    # get capacity hours
-    max_hours = capacity_hours(section_name)*weeks_covered
-    sevenfive_hours = int(max_hours*.75) 
-
-    # get needed hours
-    needed_hours = capacity_needed_hours(df, section_name)
+    max_hours, sevenfive_hours, needed_hours = capacity_data(section_name,df)
 
     # check if over capacity
     if needed_hours > max_hours:
@@ -449,6 +430,11 @@ def render_capacity(section_name, df, col):
         bar_colour='green'
         text_colour='green'
 
+    render_capacity_cards(col,text_colour,needed_hours,sevenfive_hours,max_hours)
+    render_capacity_chart(needed_hours, sevenfive_hours,max_hours, bar_colour,col)
+    
+
+def render_capacity_cards(col,text_colour,needed_hours,sevenfive_hours,max_hours):
     col.markdown(f"""
     <div style="
         background: white;
@@ -479,7 +465,8 @@ def render_capacity(section_name, df, col):
     </div>
     """, unsafe_allow_html=True)
     
-    # --- CAPACITY GRAPH ---
+
+def render_capacity_chart(needed_hours, sevenfive_hours,max_hours, bar_colour,col):
     fig = go.Figure()
 
     # Required hours bar
@@ -513,4 +500,4 @@ def render_capacity(section_name, df, col):
         yaxis_title="Hours"
     )
 
-    col.plotly_chart(fig, use_container_width=True)    
+    col.plotly_chart(fig, use_container_width=True)

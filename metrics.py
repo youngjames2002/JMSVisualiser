@@ -1,4 +1,5 @@
 import pandas as pd
+from data import *
 
 def calculate_totals(df):
     tube_df = df[df["Type"] == "TUBE"]
@@ -109,3 +110,27 @@ def sum_hours_by_date(melted):
     daily_totals["YearMonth"] = daily_totals["Display Date"].dt.to_period("M")
 
     return daily_totals
+
+def capacity_data(section_name,df):
+    # check if we're showing multiple weeks
+    if df.empty:
+        weeks_covered = 1
+    else:
+        today = pd.Timestamp.today().normalize()
+
+        # Calculate week index relative to today
+        week_index = ((df["Earliest Process Date"] - today).dt.days // 7)
+
+        max_week = week_index.max()
+
+        # Ensure minimum of 1 week
+        weeks_covered = max(max_week + 1, 1)
+    
+    # get capacity hours
+    max_hours = capacity_hours(section_name)*weeks_covered
+    sevenfive_hours = int(max_hours*.75) 
+
+    # get needed hours
+    needed_hours = capacity_needed_hours(df, section_name)
+
+    return max_hours, sevenfive_hours, needed_hours
