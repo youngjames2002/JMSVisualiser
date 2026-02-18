@@ -1,4 +1,5 @@
 import pandas as pd
+import streamlit as st
 def load_data(filepath):
     df = pd.read_excel(filepath)
 
@@ -23,12 +24,26 @@ def split_by_urgency(df):
     future_df = df[df["Days Late"] > 7]
     return late_df, week_df, future_df
 
-def apply_filters(df, late_only, incomplete_only, selected_customers, selected_machines):
+def apply_filters(df, late_select, incomplete_only, selected_customers, selected_machines):
     filtered_df = df.copy()
 
     # Late filter
-    if late_only:
-        filtered_df = filtered_df[filtered_df["Days Late"] < 0]
+    late_mask = df["Days Late"] < 0
+    week_mask = (df["Days Late"] >= 0) & (df["Days Late"] <= 7)
+    future_mask = df["Days Late"] > 7
+
+    status_mask = False
+
+    if "Late" in late_select:
+        status_mask = status_mask | late_mask
+
+    if "Due This Week" in late_select:
+        status_mask = status_mask | week_mask
+
+    if "Due in Future" in late_select:
+        status_mask = status_mask | future_mask
+
+    filtered_df = filtered_df[status_mask]
 
     # Customer filter
     filtered_df = filtered_df[

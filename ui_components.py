@@ -177,8 +177,17 @@ def render_top_customers(df):
         .head(3)
     )
     
-    c1, c2, c3 = top3.index
-    c1h, c2h, c3h = top3.values
+    topcs = top3.index.tolist()
+    topchs = top3.values.tolist()
+
+    while len(topcs) < 3:
+        topcs.append("-")
+
+    while len(topchs) < 3:
+        topchs.append("-")
+
+    c1, c2, c3 = topcs[:3]
+    c1h, c2h, c3h = topchs[:3]
 
 
     st.markdown(f"""
@@ -296,8 +305,14 @@ def render_filter_section(df):
     df["Machine"] = df["Machine"].fillna("No Machine Assigned")
 
     # Late toggle
+    late_statuses = "Late", "Due This Week", "Due in Future"
     with filter_col1:
-        late_only = st.toggle("Show Late Bundles Only")
+        late_select = st.multiselect(
+            "Show Late Bundles Only", 
+            options=late_statuses, 
+            default=late_statuses,
+            key="late_filter"
+        )
 
     # Customer multi-select
     with filter_col2:
@@ -323,7 +338,7 @@ def render_filter_section(df):
     with filter_col4:
         incomplete_only = st.toggle("Show Incomplete Bundles Only", value=True)
 
-    return late_only, incomplete_only, selected_customers, selected_machines
+    return late_select, incomplete_only, selected_customers, selected_machines
 
 def render_progress_bar(df, column):
     total = len(df)
