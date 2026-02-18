@@ -10,6 +10,17 @@ def calculate_totals(df):
 
     return total_folding, flat_cutting, tube_cutting
 
+def capacity_needed_hours(df, section_name):
+    total_folding, flat_cutting, tube_cutting = calculate_totals(df)
+    if section_name == "Tube Cutting":
+        return tube_cutting
+    elif section_name == "Flat Cutting":
+        return flat_cutting
+    elif section_name == "Folding":
+        return total_folding
+    else:
+        return 0
+
 def bar_chart_hours_by_date(df):
     today = pd.Timestamp.today().normalize()
 

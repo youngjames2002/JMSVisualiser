@@ -1,6 +1,7 @@
 import pandas as pd
 import streamlit as st
-def load_data(filepath):
+def load_data():
+    filepath = "C:\\Users\\james\\JMS Metaltec\\JMS Engineering Team - JMS Engineering Team SharePoint\\JMS Master Schedule\\testAutomation\\bundleStagingSheet.xlsx"
     df = pd.read_excel(filepath)
 
     df["Earliest Process Date"] = pd.to_datetime(
@@ -8,7 +9,12 @@ def load_data(filepath):
         dayfirst=True,
         errors="coerce"
     )
+    df = add_date_columns(df)
     return df
+
+def load_css(file_name):
+    with open(file_name) as f:
+        st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
 
 def add_date_columns(df):
     today = pd.Timestamp.today().normalize()
@@ -62,3 +68,15 @@ def apply_filters(df, late_select, incomplete_only, selected_customers, selected
         ]
 
     return filtered_df
+
+# This is hardcoded for now but could change to be read from somewhere
+# if needed and will be changing often
+def capacity_hours(section_name):
+    if section_name == "Tube Cutting":
+        return 28
+    elif section_name == "Flat Cutting":
+        return 152
+    elif section_name == "Folding":
+        return 190
+    else:
+        return 0

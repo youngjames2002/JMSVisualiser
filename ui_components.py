@@ -54,14 +54,7 @@ def render_cutting_pie_chart(flat_hours, tube_hours):
     st.plotly_chart(fig, use_container_width=True)
 
 def render_folding_hours(folding_hours):
-    folding_capacity = 30 #random number
-
     st.markdown("### Total Estimated Folding Hours")
-    if folding_hours > folding_capacity:
-        text_colour = 'red'
-    else:
-        text_colour = 'black'
-
     st.markdown(f"""
     <div style="
         background: white;
@@ -69,9 +62,9 @@ def render_folding_hours(folding_hours):
         border-radius: 12px;
         text-align: center;
         box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-        color: {text_colour};
+        color: black;
     ">
-        <h1 style="margin:0;">{round(folding_hours, 1)}/{round(folding_capacity,1)}</h1>
+        <h1 style="margin:0;">{int(folding_hours)}</h1>
         <p style="margin:0; color: grey;">hours</p>
     </div>
     """, unsafe_allow_html=True)
@@ -213,6 +206,13 @@ def render_cards_titles():
     col3.markdown("### 🟢 Future")
     col4.markdown('### Charts')
 
+def render_capacity_titles():
+    col1, col2, col3 = st.columns(3)
+    col1.markdown("## TUBE CUTTING")
+    col2.markdown("## FLAT CUTTING")
+    col3.markdown("## FOLDING")
+
+
 def render_bar_chart(df, column):
     melted = bar_chart_hours_by_date(df)
 
@@ -306,11 +306,12 @@ def render_filter_section(df):
 
     # Late toggle
     late_statuses = "Late", "Due This Week", "Due in Future"
+    default_statuses = "Late", "Due This Week"
     with filter_col1:
         late_select = st.multiselect(
             "Show Late Bundles Only", 
             options=late_statuses, 
-            default=late_statuses,
+            default=default_statuses,
             key="late_filter"
         )
 
@@ -412,3 +413,104 @@ def render_side_panel(df):
     panel_html += "</div>"
 
     st.markdown(panel_html, unsafe_allow_html=True)
+
+def render_capacity(section_name, df, col):
+    col.write(f"## {section_name}")
+
+    # check if we're showing multiple weeks
+    if df.empty:
+        weeks_covered = 1
+    else:
+        today = pd.Timestamp.today().normalize()
+
+        # Calculate week index relative to today
+        week_index = ((df["Earliest Process Date"] - today).dt.days // 7)
+
+        max_week = week_index.max()
+
+        # Ensure minimum of 1 week
+        weeks_covered = max(max_week + 1, 1)
+    
+    # get capacity hours
+    max_hours = capacity_hours(section_name)*weeks_covered
+    sevenfive_hours = int(max_hours*.75) 
+
+    # get needed hours
+    needed_hours = capacity_needed_hours(df, section_name)
+
+    # check if over capacity
+    if needed_hours > max_hours:
+        text_colour = 'red'
+        bar_colour = 'red'
+    elif needed_hours > sevenfive_hours:
+        text_colour = 'orange'
+        bar_colour = 'orange'
+    else:
+        bar_colour='green'
+        text_colour='green'
+
+    col.markdown(f"""
+    <div style="
+        background: white;
+        padding: 30px;
+        border-radius: 12px;
+        text-align: center;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+        color: {text_colour};
+    ">
+        <h3>75% Capacity</h3>
+        <h2 style="margin:0;">{needed_hours}/{sevenfive_hours} </h2>       
+        <p style="margin:0; color: grey;">hours</p>
+    </div>
+    """, unsafe_allow_html=True)
+    col.markdown(f"""
+    <div style="
+        background: white;
+        padding: 30px;
+        border-radius: 12px;
+        text-align: center;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+        color: {text_colour};
+        margin-top: 10px;        
+    ">
+        <h3>MAX Capacity</h3>
+        <h2 style="margin:0;">{needed_hours}/{max_hours}    </h2>     
+        <p style="margin:0; color: grey;">hours</p>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    # --- CAPACITY GRAPH ---
+    fig = go.Figure()
+
+    # Required hours bar
+    fig.add_trace(go.Bar(
+        x=["Demand"],
+        y=[needed_hours],
+        name="Required Hours",
+        marker_color=bar_colour
+    ))
+
+    # 75% capacity line
+    fig.add_hline(
+        y=sevenfive_hours,
+        line_dash="dash",
+        annotation_text="75% Capacity",
+        annotation_position="top left"
+    )
+
+    # Max capacity line
+    fig.add_hline(
+        y=max_hours,
+        line_dash="solid",
+        annotation_text="Max Capacity",
+        annotation_position="top left"
+    )
+
+    fig.update_layout(
+        height=350,
+        margin=dict(l=20, r=20, t=20, b=20),
+        showlegend=False,
+        yaxis_title="Hours"
+    )
+
+    col.plotly_chart(fig, use_container_width=True)    
