@@ -200,7 +200,6 @@ def render_capacity_titles():
     col2.markdown("## FLAT CUTTING")
     col3.markdown("## FOLDING")
 
-
 def render_bar_chart(df, column):
     melted = bar_chart_hours_by_date(df)
 
@@ -281,8 +280,7 @@ def render_line_chart(df, column):
     )
 
     fig.update_yaxes(range=[0, monthly_data["Cumulative Hours"].max() * 1.05])
-    column.plotly_chart(fig, use_container_width=True)
-    
+    column.plotly_chart(fig, use_container_width=True)  
 
 def render_filter_section(df):
     st.markdown("## Filters")
@@ -421,7 +419,6 @@ def render_capacity(section_name, df, col):
     render_capacity_cards(col,text_colour,needed_hours,sevenfive_hours,max_hours)
     render_capacity_chart(needed_hours, sevenfive_hours,max_hours, bar_colour,col)
     
-
 def render_capacity_cards(col,text_colour,needed_hours,sevenfive_hours,max_hours):
     col.markdown(f"""
     <div style="
@@ -433,7 +430,7 @@ def render_capacity_cards(col,text_colour,needed_hours,sevenfive_hours,max_hours
         color: {text_colour};
     ">
         <h3>75% Capacity</h3>
-        <h2 style="margin:0;">{needed_hours}/{sevenfive_hours} </h2>       
+        <h2 style="margin:0;">{int(needed_hours)}/{int(sevenfive_hours)} ({int(needed_hours/sevenfive_hours*100)}%)</h2>       
         <p style="margin:0; color: grey;">hours</p>
     </div>
     """, unsafe_allow_html=True)
@@ -448,12 +445,11 @@ def render_capacity_cards(col,text_colour,needed_hours,sevenfive_hours,max_hours
         margin-top: 10px;        
     ">
         <h3>MAX Capacity</h3>
-        <h2 style="margin:0;">{needed_hours}/{max_hours}    </h2>     
+        <h2 style="margin:0;">{int(needed_hours)}/{int(max_hours)} ({int(needed_hours/max_hours*100)}%)</h2>     
         <p style="margin:0; color: grey;">hours</p>
     </div>
     """, unsafe_allow_html=True)
     
-
 def render_capacity_chart(needed_hours, sevenfive_hours,max_hours, bar_colour,col):
     fig = go.Figure()
 
