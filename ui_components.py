@@ -84,19 +84,7 @@ def render_cards(dataframe, column):
             due_date = "No date"
             days_diff = None
 
-        # Colour logic
-        if days_diff is None:
-            band_color = "#cccccc"
-        elif days_diff < -7:
-            band_color = "#8B0000"
-        elif days_diff < 0:
-            band_color = "#FF0000"
-        elif days_diff == 0:
-            band_color = "#ff9999"
-        elif days_diff <= 7:
-            band_color = "#FFD700"
-        else:
-            band_color = "#28a745"
+        band_color = urgency_colour(days_diff)
 
         # checks if details side panel is showing
         is_selected = (st.session_state.selected_bundle == bundle_name)

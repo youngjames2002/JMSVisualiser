@@ -134,3 +134,19 @@ def capacity_data(section_name,df):
     needed_hours = capacity_needed_hours(df, section_name)
 
     return max_hours, sevenfive_hours, needed_hours
+
+def urgency_colour(days_late):
+    if days_late <= -14:
+        return "#8B0000"  # dark red
+    elif days_late < 0:
+        return "#FF0000"  # red
+    elif days_late == 0:
+        return "#FF69B4"  # pink
+    elif days_late <= 7:
+        return "#FFD700"  # yellow
+    elif days_late <= 14:
+        return "#90EE90"  # light green
+    elif days_late <= 21:
+        return "#006400"  # dark green
+    else:
+        return "#0B3D91" # navy
