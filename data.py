@@ -2,7 +2,8 @@ import pandas as pd
 import streamlit as st
 
 def load_data():
-    filepath = "C:\\Users\\james\\JMS Metaltec\\JMS Engineering Team - JMS Engineering Team SharePoint\\JMS Master Schedule\\testAutomation\\bundleStagingSheet.xlsx"
+    ## CHANGE THIS ON DIFFERENT MACHINES
+    filepath = r"C:\Users\james\OneDrive - JMS Metaltec\JMS Engineering Team - JMS Engineering Team SharePoint\JMS Master Schedule\testAutomation\bundleStagingSheet.xlsx"
     df = pd.read_excel(filepath)
 
     df["Earliest Process Date"] = pd.to_datetime(
@@ -71,7 +72,7 @@ def apply_filters(df, late_select, incomplete_only, selected_customers, selected
     return filtered_df
 
 # This is hardcoded for now but could change to be read from somewhere
-# if needed and will be changing often
+# if needed and would be changing often
 def capacity_hours(section_name):
     if section_name == "Tube Cutting":
         return 28

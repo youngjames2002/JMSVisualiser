@@ -15,7 +15,6 @@ if "selected_bundle" not in st.session_state:
 st.title("Bundle Data Visualiser - Admin View")
 
 # load data from sheet
-# !!!! CHANGE THIS WHEN SWITCHING MACHINES !!!!
 df = load_data()
 
 # at a glance placholder

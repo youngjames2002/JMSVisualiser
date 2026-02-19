@@ -77,6 +77,7 @@ def render_cards(dataframe, column):
         due_raw = row["Earliest Process Date"]
         days_diff = row["Days Late"]
         bundle_type = row["Type"]
+        bundle_status = row["Completed?"]
 
         if pd.notnull(due_raw):
             due_date = due_raw.strftime("%d/%m/%Y")
@@ -96,6 +97,7 @@ def render_cards(dataframe, column):
                 <div class="{card_class}" style="border-left:8px solid {band_color};">
                     <div class="bundle-title">{bundle_name}</div>
                     <div class="bundle-date">Due Date: {due_date}</div>
+                    <div class="bundle-date">Completion Status: {bundle_status}</div>
                     <div class="bundle-type">{bundle_type}</div>
                 </div>
             """, unsafe_allow_html=True)
