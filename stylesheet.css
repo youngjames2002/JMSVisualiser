@@ -36,3 +36,28 @@
     color: #666;
     font-size: 20px;
 }
+
+/* Card base */
+.app-card {
+    background: white;
+    padding: 30px;
+    border-radius: 12px;
+    text-align: center;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    transition: transform 0.15s ease;
+}
+
+.app-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 18px rgba(0,0,0,0.12);
+    background: lightgrey;
+}
+
+/* Variants */
+.app-card.black { color: black; }
+.app-card.green { color: green; }
+.app-card.orange { color: orange; }
+.app-card.red { color: red; }
+
+/* Spacing helper */
+.mt-10 { margin-top: 10px; }

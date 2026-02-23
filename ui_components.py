@@ -56,14 +56,7 @@ def render_cutting_pie_chart(flat_hours, tube_hours):
 def render_folding_hours(folding_hours):
     st.markdown("### Total Estimated Folding Hours")
     st.markdown(f"""
-    <div style="
-        background: white;
-        padding: 30px;
-        border-radius: 12px;
-        text-align: center;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-        color: black;
-    ">
+    <div class="app-card black">
         <h1 style="margin:0;">{int(folding_hours)}</h1>
         <p style="margin:0; color: grey;">hours</p>
     </div>
@@ -174,14 +167,7 @@ def render_top_customers(df):
 
 
     st.markdown(f"""
-    <div style="
-        background: white;
-        padding: 30px;
-        border-radius: 12px;
-        text-align: center;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-        color: black;
-    ">
+    <div class="app-card black">
         <h3 style="margin:0;">1. {c1} - {c1h} hours</h3>
         <h3 style="margin:0;">2. {c2} - {c2h} hours</h3>
         <h3 style="margin:0;">3. {c3} - {c3h} hours</h3>
@@ -430,29 +416,14 @@ def render_capacity(section_name, df, col):
     
 def render_capacity_cards(col,text_colour,needed_hours,sevenfive_hours,max_hours):
     col.markdown(f"""
-    <div style="
-        background: white;
-        padding: 30px;
-        border-radius: 12px;
-        text-align: center;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-        color: {text_colour};
-    ">
+    <div class="app-card {text_colour}">
         <h3>75% Capacity</h3>
         <h2 style="margin:0;">{int(needed_hours)}/{int(sevenfive_hours)} ({int(needed_hours/sevenfive_hours*100)}%)</h2>       
         <p style="margin:0; color: grey;">hours</p>
     </div>
     """, unsafe_allow_html=True)
     col.markdown(f"""
-    <div style="
-        background: white;
-        padding: 30px;
-        border-radius: 12px;
-        text-align: center;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-        color: {text_colour};
-        margin-top: 10px;        
-    ">
+    <div class="app-card {text_colour}">
         <h3>MAX Capacity</h3>
         <h2 style="margin:0;">{int(needed_hours)}/{int(max_hours)} ({int(needed_hours/max_hours*100)}%)</h2>     
         <p style="margin:0; color: grey;">hours</p>
