@@ -16,44 +16,24 @@ def load_data():
     return df
 
 def apply_company_grouping(df):
-    df=df.copy()
+    df = df.copy()
+
     df["Customer Grouped"] = df["Customer"].str.upper().str.strip()
 
-    # Group as 'BAMFORD'
-    df.loc[
-        df["Customer Grouped"].str.contains("BAMFORD", na=False),
-        "Customer Grouped"
-    ] = "BAMFORD"
+    COMPANY_KEYWORDS = [
+        "BAMFORD",
+        "CDE",
+        "TOBERMORE",
+        "FARLOW",
+        "SANDVIK",
+        "CROSSLAND"
+    ]
 
-    # Group as 'CDE'
-    df.loc[
-        df["Customer Grouped"].str.contains("CDE", na=False),
-        "Customer Grouped"
-    ] = "CDE"
-
-    # Group as 'TOBERMORE'
-    df.loc[
-        df["Customer Grouped"].str.contains("TOBERMORE", na=False),
-        "Customer Grouped"
-    ] = "TOBERMORE"
-
-    # Group as 'FARLOW'
-    df.loc[
-        df["Customer Grouped"].str.contains("FARLOW", na=False),
-        "Customer Grouped"
-    ] = "FARLOW"
-
-    # Group as 'SANDVIK'
-    df.loc[
-        df["Customer Grouped"].str.contains("SANDVIK", na=False),
-        "Customer Grouped"
-    ] = "SANDVIK"
-
-    # Group as 'CROSSLAND'
-    df.loc[
-        df["Customer Grouped"].str.contains("CROSSLAND", na=False),
-        "Customer Grouped"
-    ] = "CROSSLAND"
+    for keyword in COMPANY_KEYWORDS:
+        df.loc[
+            df["Customer Grouped"].str.contains(keyword, na=False),
+            "Customer Grouped"
+        ] = keyword
 
     return df
 
