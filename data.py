@@ -32,7 +32,7 @@ def split_by_urgency(df):
     future_df = df[df["Days Late"] > 7]
     return late_df, week_df, future_df
 
-def apply_filters(df, late_select, incomplete_only, selected_customers, selected_machines):
+def apply_filters(df, late_select, incomplete_only, selected_customers, selected_machines, bundle_search):
     filtered_df = df.copy()
 
     # Late filter
@@ -68,6 +68,14 @@ def apply_filters(df, late_select, incomplete_only, selected_customers, selected
         filtered_df = filtered_df[
             filtered_df["Completed?"] == "No"
         ]
+
+    # bundle search
+    if bundle_search:
+        filtered_df = filtered_df[
+            filtered_df["Bundle/Job"]
+            .astype(str)
+            .str.contains(bundle_search, case=False, na=False)
+    ]
 
     return filtered_df
 

@@ -22,9 +22,9 @@ at_a_glance_container = st.container()
 
 # filter by lateness, customer and machine
 st.divider()
-late_only, incomplete_only, selected_customers, selected_machines = render_filter_section(df)
+late_only, incomplete_only, selected_customers, selected_machines, bundle_search = render_filter_section(df)
 st.divider()
-filtered_df = apply_filters(df, late_only, incomplete_only, selected_customers, selected_machines)
+filtered_df = apply_filters(df, late_only, incomplete_only, selected_customers, selected_machines, bundle_search)
 
 # render at a glance section
 late_df, week_df, future_df = split_by_urgency(filtered_df)

@@ -287,7 +287,7 @@ def render_line_chart(df, column):
 def render_filter_section(df):
     st.markdown("## Filters")
 
-    filter_col1, filter_col2, filter_col3, filter_col4 = st.columns(4)
+    filter_col1, filter_col2, filter_col3, filter_col4, filter_col5 = st.columns(5)
 
     df["Customer"] = df["Customer"].fillna("No Customer Assigned")
     df["Machine"] = df["Machine"].fillna("No Machine Assigned")
@@ -327,7 +327,14 @@ def render_filter_section(df):
     with filter_col4:
         incomplete_only = st.toggle("Show Incomplete Bundles Only", value=True)
 
-    return late_select, incomplete_only, selected_customers, selected_machines
+    # search for bundle title
+    with filter_col5:
+        bundle_search = st.text_input("Search by Bundle Name",
+        placeholder="Type here...",
+        key="bundle_search"                             
+    )
+
+    return late_select, incomplete_only, selected_customers, selected_machines, bundle_search
 
 def render_progress_bar(df, column):
     total = len(df)
