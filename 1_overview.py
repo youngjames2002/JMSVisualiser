@@ -12,7 +12,7 @@ if "selected_bundle" not in st.session_state:
     st.session_state.selected_bundle = None
 
 # title
-st.title("Bundle Data Visualiser - Admin View")
+st.title("Bundles Data Visualiser")
 
 # load data from sheet
 df = load_data()

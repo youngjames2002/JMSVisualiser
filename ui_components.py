@@ -154,7 +154,7 @@ def render_late_status_ratio(late_df, week_df, future_df):
 
 def render_top_customers(df):
     top3 = (
-        df.groupby("Customer")["Estimated Bundle Time (Hours)"]
+        df.groupby("Customer Grouped")["Estimated Bundle Time (Hours)"]
         .sum()
         .sort_values(ascending=False)
         .head(3)
@@ -399,11 +399,11 @@ def render_side_panel(df):
         value = selected_row.get(field, "—")
 
         if field == "Folding Required?" and str(value).lower() == "yes":
-            panel_html += f"<p><b>{field}:</b><br>{value}</p>"
+            panel_html += f"<p><b>{field}</b><br>{value}</p>"
             panel_html += f"<p><b>Estimated Fold Time (Hours):</b><br>{selected_row.get('Estimated Fold Time (Hours)', '—')}</p>"
             panel_html += f"<p><b>Fold Site:</b><br>{selected_row.get('Fold Site', '—')}</p>"
         else:
-            panel_html += f"<p><b>{field}:</b><br>{value}</p>"
+            panel_html += f"<p><b>{field}</b><br>{value}</p>"
 
     panel_html += "</div>"
 

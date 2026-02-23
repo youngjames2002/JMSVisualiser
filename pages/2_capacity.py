@@ -22,8 +22,8 @@ st.title("Capacity Overview")
 # replicate filters most likely?
 
 #filters
-late_only, incomplete_only, selected_customers, selected_machines = render_filter_section(df)
-filtered_df = apply_filters(df, late_only, incomplete_only, selected_customers, selected_machines)
+late_only, incomplete_only, selected_customers, selected_machines, bundle_search = render_filter_section(df)
+filtered_df = apply_filters(df, late_only, incomplete_only, selected_customers, selected_machines, bundle_search)
 
 #column titles
 col1, col2, col3 = st.columns(3)
