@@ -5,6 +5,7 @@ import pandas as pd
 from metrics import *
 from data import *
 import plotly.graph_objects as go
+import datetime
 
 def render_cutting_pie_chart(flat_hours, tube_hours):
     pie_data = pd.DataFrame({
@@ -465,3 +466,59 @@ def render_capacity_chart(needed_hours, sevenfive_hours,max_hours, bar_colour,co
     )
 
     col.plotly_chart(fig, use_container_width=True)
+
+def render_bmena_finishing_cards(df):
+    filtered_df = bmena_finishing_filters(df)
+    # filtered_df = df # debug
+    # st.dataframe(filtered_df) # debug
+    for _, row in filtered_df.iterrows():
+
+        with st.container():
+            def render_field(title, value):
+                if pd.notna(value) and value != "":
+                    # If it's a datetime or Timestamp → format it
+                    if isinstance(value, (pd.Timestamp, datetime.date, datetime.datetime)):
+                        value = value.strftime("%d/%m/%Y")
+
+                    return f"<div style='margin-bottom:6px;'><strong>{title}:</strong> {value}</div>"
+                return ""
+
+            col1_html = "".join([
+                render_field("Customer", row.get("Customer")),
+                render_field("Combined", row.get("Combined")),
+                render_field("Price", row.get("Price")),
+                render_field("Finish Required Week Ending", row.get("Finish Required Week Ending")),
+                render_field("Description", row.get("Description"))
+            ])
+
+            # Column 2
+            col2_html = "".join([
+                render_field("Line No", row.get("Line No.")),
+                render_field("PO", row.get("PO")),
+                render_field("Drawing No", row.get("Drawing No.")),
+                render_field("Quantity Ordered", row.get("Quantity Ordered")),
+                render_field("Specification", row.get("Specification")),
+            ])
+
+            # Column 3
+            col3_html = "".join([
+                render_field("Bundle", row.get("Bundle")),
+                render_field("Tube Bundle", row.get("Tube Bundle")),
+                render_field("Welder", row.get("Welder")),
+                render_field("Date Sent to Finish", row.get("Date Sent to Finish")),
+                render_field("Date Returned to JMS", row.get("Date Returned to JMS")),
+                render_field("Delivery Qty Outstanding", row.get("Delivery Qty Outstanding")),
+                render_field("Date Delivered", row.get("Date Delivered")),
+            ])
+
+            st.markdown(f"""
+        <div class="app-card black" style="padding:20px;">
+            <div style="display:flex; gap:40px; text-align:left">
+                <div style="flex:1;">{col1_html}</div>
+                <div style="flex:1;">{col2_html}</div>
+                <div style="flex:1;">{col3_html}</div>
+            </div>
+        </div>
+    """, unsafe_allow_html=True)
+
+    

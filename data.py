@@ -1,5 +1,7 @@
 import pandas as pd
 import streamlit as st
+from openpyxl import load_workbook
+from pathlib import Path
 
 def load_data():
     ## CHANGE THIS ON DIFFERENT MACHINES
@@ -13,6 +15,25 @@ def load_data():
     )
     df = add_date_columns(df)
     df = apply_company_grouping(df)
+    return df
+
+def load_data_Bmena():
+    ## CHANGE THIS ON DIFFERENT MACHINES
+    src_file = src_file = Path.cwd() / r"C:\Users\james\OneDrive - JMS Metaltec\JMS Engineering Team - JMS Engineering Team SharePoint\Paint Schedule\Bmena Finishing Schedule.xlsm"
+    wb = load_workbook(filename=src_file, data_only=True)
+    sheet = wb["Schedule"]
+    lookup_table = sheet.tables["Table1"]
+    data = sheet[lookup_table.ref]
+    rows_list=[]
+
+    for row in data:
+        cols=[]
+        for col in row:
+            cols.append(col.value)
+        rows_list.append(cols)
+
+    df = pd.DataFrame(data=rows_list[1:], index=None, columns=rows_list[0])
+
     return df
 
 def apply_company_grouping(df):
@@ -102,6 +123,39 @@ def apply_filters(df, late_select, incomplete_only, selected_customers, selected
 
     return filtered_df
 
+def bmena_finishing_filters(df):
+    # date filter
+    # get today
+    today = pd.Timestamp.today().normalize()
+
+    # Ensure datetime
+    df["Finish Required Week Ending"] = pd.to_datetime(
+        df["Finish Required Week Ending"], errors="coerce"
+    )
+
+    # Find the nearest date AFTER today
+    future_dates = df.loc[
+        df["Finish Required Week Ending"] > today,
+        "Finish Required Week Ending"
+    ]
+    if not future_dates.empty:
+        cutoff_date = future_dates.min()
+    else:
+        # If no future dates exist, use max date in column
+        cutoff_date = df["Finish Required Week Ending"].max()
+
+    # Filter rows with date <= cutoff
+    filtered_df = df[
+        df["Finish Required Week Ending"] <= cutoff_date
+    ]  
+
+    # blank filters
+    # only records with date delivered AND supplier AND comments blanked
+    filtered_df = filtered_df[filtered_df["Date Delivered"].isna()]
+    filtered_df = filtered_df[filtered_df["Supplier"].isna()]
+    filtered_df = filtered_df[filtered_df["Comments"].isna()]
+
+    return filtered_df
 # This is hardcoded for now but could change to be read from somewhere
 # if needed and would be changing often
 def capacity_hours(section_name):
@@ -113,4 +167,6 @@ def capacity_hours(section_name):
         return 190
     else:
         return 0
+    
+
     
