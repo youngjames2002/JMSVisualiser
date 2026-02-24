@@ -55,8 +55,10 @@ def download_excel_from_sharepoint(site_name: str, file_path:str) -> BytesIO:
         client_credential=CLIENT_SECRET
     )  
 
+    token = app.acquire_token_for_client(scopes=["https://graph.microsoft.com/.default"])
+    st.json(token)  # should contain "access_token" if successful
+
     token = app.acquire_token_for_client(scopes=SCOPE)
-    st.write(token)
     if "access_token" not in token:
         st.error("Authentication failed")
         return None
