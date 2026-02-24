@@ -50,12 +50,13 @@ def download_excel_from_sharepoint(site_name: str, file_path:str) -> BytesIO:
     SCOPE = ["https://graph.microsoft.com/.default"]
 
     app = msal.ConfidentialClientApplication(
-        CLIENT_ID,
+        client_id=CLIENT_ID,
         authority=AUTHORITY,
         client_credential=CLIENT_SECRET
     )  
 
     token = app.acquire_token_for_client(scopes=SCOPE)
+    st.write(token)
     if "access_token" not in token:
         st.error("Authentication failed")
         return None
