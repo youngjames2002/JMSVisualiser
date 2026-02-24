@@ -2,12 +2,90 @@ import pandas as pd
 import streamlit as st
 from openpyxl import load_workbook
 from pathlib import Path
+from io import BytesIO
+import msal
 
+# def load_data():
+#     ## CHANGE THIS ON DIFFERENT MACHINES
+#     filepath = r"C:\Users\james\OneDrive - JMS Metaltec\JMS Engineering Team - JMS Engineering Team SharePoint\JMS Master Schedule\testAutomation\bundleStagingSheet.xlsx"
+#     df = pd.read_excel(filepath)
+
+#     df["Earliest Process Date"] = pd.to_datetime(
+#         df["Earliest Process Date"],
+#         dayfirst=True,
+#         errors="coerce"
+#     )
+#     df = add_date_columns(df)
+#     df = apply_company_grouping(df)
+#     return df
+
+# def load_data_Bmena():
+#     ## CHANGE THIS ON DIFFERENT MACHINES
+#     src_file = src_file = Path.cwd() / r"C:\Users\james\OneDrive - JMS Metaltec\JMS Engineering Team - JMS Engineering Team SharePoint\Paint Schedule\Bmena Finishing Schedule.xlsm"
+#     wb = load_workbook(filename=src_file, data_only=True)
+#     sheet = wb["Schedule"]
+#     lookup_table = sheet.tables["Table1"]
+#     data = sheet[lookup_table.ref]
+#     rows_list=[]
+
+#     for row in data:
+#         cols=[]
+#         for col in row:
+#             cols.append(col.value)
+#         rows_list.append(cols)
+
+#     df = pd.DataFrame(data=rows_list[1:], index=None, columns=rows_list[0])
+
+#     return df
+
+def download_excel_from_sharepoint(site_name: str, file_path:str) -> BytesIO:
+    # download from sharepoint and return bytesIO object
+
+    TENANT_ID = st.secrets["TENANT_ID"]
+    CLIENT_ID = st.secrets["CLIENT_ID"]
+    CLIENT_SECRET = st.secrets["CLIENT_SECRET"]
+    SHAREPOINT_SITE = st.secrets["SHAREPOINT_SITE"]
+
+    AUTHORITY = f"https://login.microsoftonline.com/{TENANT_ID}"
+    SCOPE = ["https://graph.microsoft.com/.default"]
+
+    app = msal.ConfidentialClientApplication(
+        CLIENT_ID,
+        authority=AUTHORITY,
+        client_credential=CLIENT_SECRET
+    )  
+
+    token = app.acquire_token_for_client(scopes=SCOPE)
+    if "access_token" not in token:
+        st.error("Authentication failed")
+        return None
+
+    headers = {"Authorization": f"Bearer {token['access_token']}"} 
+
+    # Get SharePoint site ID
+    site_url = f"https://graph.microsoft.com/v1.0/sites/{SHAREPOINT_SITE}:/sites/{site_name}"
+    site_response = requests.get(site_url, headers=headers)
+    site_response.raise_for_status()
+    site_id = site_response.json()["id"] 
+
+    # Download the file
+    file_url = f"https://graph.microsoft.com/v1.0/sites/{site_id}/drive/root:/{file_path}:/content"
+    file_response = requests.get(file_url, headers=headers)
+    file_response.raise_for_status()
+
+    return BytesIO(file_response.content)
+@st.cache.data(show_spinner=True)
 def load_data():
-    ## CHANGE THIS ON DIFFERENT MACHINES
-    filepath = r"C:\Users\james\OneDrive - JMS Metaltec\JMS Engineering Team - JMS Engineering Team SharePoint\JMS Master Schedule\testAutomation\bundleStagingSheet.xlsx"
-    df = pd.read_excel(filepath)
+    bytes_io = download_excel_from_sharepoint(
+        site_name="JMS Engineering Team",
+        file_path="JMS Master Schedule/testAutomation/bundleStagingSheet.xlsx"
+    )
+    if bytes_io is None:
+        return pd.DataFrame()  # return empty DataFrame if download failed
 
+    df = pd.read_excel(bytes_io)
+
+    # Example processing (replace with your real functions)
     df["Earliest Process Date"] = pd.to_datetime(
         df["Earliest Process Date"],
         dayfirst=True,
@@ -17,24 +95,25 @@ def load_data():
     df = apply_company_grouping(df)
     return df
 
+@st.cache.data(show_spinner=True)
 def load_data_Bmena():
-    ## CHANGE THIS ON DIFFERENT MACHINES
-    src_file = src_file = Path.cwd() / r"C:\Users\james\OneDrive - JMS Metaltec\JMS Engineering Team - JMS Engineering Team SharePoint\Paint Schedule\Bmena Finishing Schedule.xlsm"
-    wb = load_workbook(filename=src_file, data_only=True)
+    bytes_io = download_excel_from_sharepoint(
+        site_name="JMS Engineering Team",
+        file_path="Paint Schedule/Bmena Finishing Schedule.xlsm"
+    )
+    if bytes_io is None:
+        return pd.DataFrame()  # return empty DataFrame if download failed
+
+    wb = load_workbook(filename=bytes_io, data_only=True)
     sheet = wb["Schedule"]
     lookup_table = sheet.tables["Table1"]
     data = sheet[lookup_table.ref]
-    rows_list=[]
 
-    for row in data:
-        cols=[]
-        for col in row:
-            cols.append(col.value)
-        rows_list.append(cols)
-
-    df = pd.DataFrame(data=rows_list[1:], index=None, columns=rows_list[0])
-
+    # Convert table to DataFrame
+    rows_list = [[cell.value for cell in row] for row in data]
+    df = pd.DataFrame(rows_list[1:], columns=rows_list[0])
     return df
+
 
 def apply_company_grouping(df):
     df = df.copy()
