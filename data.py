@@ -74,7 +74,7 @@ def download_excel_from_sharepoint(site_name: str, file_path:str) -> BytesIO:
     file_response.raise_for_status()
 
     return BytesIO(file_response.content)
-@st.cache.data(show_spinner=True)
+@st.cache_data(show_spinner=True)
 def load_data():
     bytes_io = download_excel_from_sharepoint(
         site_name="JMS Engineering Team",
@@ -95,7 +95,7 @@ def load_data():
     df = apply_company_grouping(df)
     return df
 
-@st.cache.data(show_spinner=True)
+@st.cache_data(show_spinner=True)
 def load_data_Bmena():
     bytes_io = download_excel_from_sharepoint(
         site_name="JMS Engineering Team",
