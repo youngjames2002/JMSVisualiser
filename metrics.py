@@ -135,11 +135,13 @@ def capacity_data(section_name,df):
 
     return max_hours, sevenfive_hours, needed_hours
 
-def urgency_colour(due_date):
+def urgency_colour(completed, due_date):
     today = pd.Timestamp.today().normalize()
     current_week = today.to_period("W")
     due_week = due_date.to_period("W")
-    if due_date == today:
+    if completed == "Yes":
+        return "grey"
+    elif due_date == today:
         return "#FF69B4"  # pink -> today
     elif due_date < today:
         return "#FF0000"  # red → overdue (past date)

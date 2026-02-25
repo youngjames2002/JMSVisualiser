@@ -69,7 +69,6 @@ def render_cards(dataframe, column):
 
         bundle_name = row["Bundle/Job"]
         due_raw = row["Earliest Process Date"]
-        # days_diff = row["Days Late"]
         bundle_type = row["Type"]
         bundle_status = row["Completed?"]
 
@@ -77,17 +76,16 @@ def render_cards(dataframe, column):
             due_date = due_raw.strftime("%d/%m/%Y")
         else:
             due_date = "No date"
-            # days_diff = None
 
-        band_color = urgency_colour(due_raw)
+        band_color = urgency_colour(bundle_status,due_raw)
 
         # checks if details side panel is showing
         is_selected = (st.session_state.selected_bundle == bundle_name)
         card_class = "bundle-card selected" if is_selected else "bundle-card"
 
         # Card container
-        if row["Completed?"] != "Yes":
-            column.markdown(f"""
+        #if row["Completed?"] != "Yes":
+        column.markdown(f"""
                 <div class="{card_class}" style="border-left:8px solid {band_color};">
                     <div class="bundle-title">{bundle_name}</div>
                     <div class="bundle-date">Due Date: {due_date}</div>
@@ -97,16 +95,16 @@ def render_cards(dataframe, column):
             """, unsafe_allow_html=True)
 
             # Click button
-            button_label = "Close Details" if is_selected else "View Details"
+        button_label = "Close Details" if is_selected else "View Details"
 
-            if column.button(button_label, key=f"btn_{bundle_name}"):
-                if is_selected:
+        if column.button(button_label, key=f"btn_{bundle_name}"):
+            if is_selected:
                     # If already open → close it
-                    st.session_state.selected_bundle = None
-                else:
+                st.session_state.selected_bundle = None
+            else:
                     # Otherwise open it
-                    st.session_state.selected_bundle = bundle_name
-                st.rerun()       
+                st.session_state.selected_bundle = bundle_name
+            st.rerun()       
 
 def render_at_a_glance(df,late_df, week_df, future_df):
     total_folding, flat_cutting, tube_cutting = calculate_totals(df)
