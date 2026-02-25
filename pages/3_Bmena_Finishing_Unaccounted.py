@@ -12,7 +12,10 @@ load_css('stylesheet.css')
 df = load_data_Bmena_local()
 
 #title
-st.title("Ballymena Unaccounted Finishing Jobs")
+tcol1, tcol2 = st.columns([1,4])
+tcol2.title("Ballymena Unaccounted Finishing Jobs")
+render_logo(tcol1)
 
 #display cards
+st.markdown("Showing all records with due date this week or before, with no value for delivery date, supplier or comments")
 render_bmena_finishing_cards(df)

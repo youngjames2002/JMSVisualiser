@@ -3,6 +3,9 @@ from data import *
 from metrics import *
 from ui_components import *
 
+import plotly.io as pio
+pio.templates.default = "simple_white"
+
 st.set_page_config(layout="wide")
 
 #load css
@@ -13,7 +16,9 @@ load_css('stylesheet.css')
 df = load_data_local()
 
 #title
-st.title("Capacity Overview")
+tcol1, tcol2 = st.columns([1,4])
+tcol2.title("Bundles Capacity Overview")
+render_logo(tcol1)
 
 # folding, flat and tube cutting need shown as
 # just hours/total possible

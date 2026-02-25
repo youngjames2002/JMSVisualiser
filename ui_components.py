@@ -6,6 +6,7 @@ from metrics import *
 from data import *
 import plotly.graph_objects as go
 import datetime
+from PIL import Image
 
 def render_cutting_pie_chart(flat_hours, tube_hours):
     pie_data = pd.DataFrame({
@@ -55,11 +56,9 @@ def render_cutting_pie_chart(flat_hours, tube_hours):
     st.plotly_chart(fig, use_container_width=True)
 
 def render_folding_hours(folding_hours):
-    st.markdown("### Total Estimated Folding Hours")
     st.markdown(f"""
     <div class="app-card black">
-        <h1 style="margin:0;">{int(folding_hours)}</h1>
-        <p style="margin:0; color: grey;">hours</p>
+        <h1 style="margin:0;">{int(folding_hours)} hours</h1>
     </div>
     """, unsafe_allow_html=True)
 
@@ -112,18 +111,47 @@ def render_at_a_glance(df,late_df, week_df, future_df):
     col1, col2, col3, col4 = st.columns(4)
 
     with col2:
-        st.markdown("### Total Estimated Cutting Hours")
+        st.markdown(
+        """
+        <div style="text-align: center;">
+            <h3>Total Estimated Cutting Hours</h3>
+        </div>
+        """,
+        unsafe_allow_html=True
+        )
         render_cutting_pie_chart(flat_cutting, tube_cutting)
 
     with col1:
+        st.markdown(
+        """
+        <div style="text-align: center;">
+            <h3>Total Estimated Folding Hours</h3>
+        </div>
+        """,
+        unsafe_allow_html=True
+        )
         render_folding_hours(total_folding)
 
     with col3:
-        st.markdown("### Ratio of Late Jobs")
+        st.markdown(
+        """
+        <div style="text-align: center;">
+            <h3>Ratio of Late Jobs</h3>
+        </div>
+        """,
+        unsafe_allow_html=True
+        )
         render_late_status_ratio(late_df, week_df, future_df)
 
     with col4:
-        st.markdown("### Top Customers by Hours")
+        st.markdown(
+        """
+        <div style="text-align: center;">
+            <h3>Top Customers by Hours</h3>
+        </div>
+        """,
+        unsafe_allow_html=True
+        )
         render_top_customers(df)
 
 def render_late_status_ratio(late_df, week_df, future_df):
@@ -519,4 +547,6 @@ def render_bmena_finishing_cards(df):
         </div>
     """, unsafe_allow_html=True)
 
-    
+def render_logo(col):
+    logo = Image.open("assets/logo.jpg")
+    col.image(logo, width=500)
