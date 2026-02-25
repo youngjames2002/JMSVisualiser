@@ -37,6 +37,24 @@ def load_data_Bmena_local():
 
     return df
 
+def load_data_ncr_local():
+    src_file = src_file = Path.cwd() / r"C:\Users\james\OneDrive - JMS Metaltec\JMS Engineering Team - JMS Engineering Team SharePoint\NCR Log\NCR Log.xlsm"
+    wb = load_workbook(filename=src_file, data_only=True)
+    sheet = wb["1 - Non-Conformance Log"]
+    lookup_table = sheet.tables["Table1"]
+    data = sheet[lookup_table.ref]
+    rows_list=[]
+
+    for row in data:
+        cols=[]
+        for col in row:
+            cols.append(col.value)
+        rows_list.append(cols)
+
+    df = pd.DataFrame(data=rows_list[1:], index=None, columns=rows_list[0])
+
+    return df
+
 def download_excel_from_sharepoint(site_name: str, file_path:str) -> BytesIO:
     # download from sharepoint and return bytesIO object
 
