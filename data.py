@@ -53,6 +53,13 @@ def load_data_ncr_local():
 
     df = pd.DataFrame(data=rows_list[1:], index=None, columns=rows_list[0])
 
+    # fix dates
+    df["Date"] = pd.to_datetime(
+        df["Date"],
+        dayfirst=True,
+        errors="coerce"
+    )
+
     return df
 
 def download_excel_from_sharepoint(site_name: str, file_path:str) -> BytesIO:
