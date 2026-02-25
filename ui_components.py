@@ -20,7 +20,8 @@ def render_cutting_pie_chart(flat_hours, tube_hours):
     pie_data,
     names="Type",
     values="Hours",
-    hole=0.65
+    hole=0.65,
+    color_discrete_sequence=px.colors.sequential.Blues_r
     )
 
     # Show hours instead of %
@@ -465,30 +466,52 @@ def render_capacity_chart(needed_hours, sevenfive_hours,max_hours, bar_colour,co
         x=["Demand"],
         y=[needed_hours],
         name="Required Hours",
-        marker_color=bar_colour
+        marker=dict(
+            color=bar_colour,
+            line=dict(width=0)
+        ),
+        width=0.5
     ))
 
-    # 75% capacity line
+    # 75% Capacity line
     fig.add_hline(
         y=sevenfive_hours,
-        line_dash="dash",
+        line=dict(color="#f39c12", width=2, dash="dash"),
         annotation_text="75% Capacity",
-        annotation_position="top left"
+        annotation_position="top right",
+        annotation_font_size=20,
+        annotation_font=dict(size=12)
     )
 
-    # Max capacity line
+    # Max Capacity line
     fig.add_hline(
         y=max_hours,
-        line_dash="solid",
+        line=dict(color="#d64545", width=3),
         annotation_text="Max Capacity",
-        annotation_position="top left"
+        annotation_position="top right",
+        annotation_font_size=20,
+        annotation_font=dict(size=12)
     )
 
     fig.update_layout(
         height=350,
-        margin=dict(l=20, r=20, t=20, b=20),
+        margin=dict(l=40, r=40, t=30, b=40),
+        plot_bgcolor="rgba(0,0,0,0)",
+        paper_bgcolor="rgba(0,0,0,0)",
+        yaxis=dict(
+            title="Hours",
+            gridcolor="rgba(0,0,0,0.05)",
+            zeroline=False
+        ),
+        xaxis=dict(
+            showgrid=False
+        ),
         showlegend=False,
-        yaxis_title="Hours"
+        font=dict(
+            family="Segoe UI, sans-serif",
+            size=13,
+            color="#1a1a1a"
+        )
     )
 
     col.plotly_chart(fig, use_container_width=True)
