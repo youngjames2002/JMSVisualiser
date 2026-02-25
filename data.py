@@ -5,38 +5,37 @@ from pathlib import Path
 from io import BytesIO
 import msal
 
-# def load_data():
-#     ## CHANGE THIS ON DIFFERENT MACHINES
-#     filepath = r"C:\Users\james\OneDrive - JMS Metaltec\JMS Engineering Team - JMS Engineering Team SharePoint\JMS Master Schedule\testAutomation\bundleStagingSheet.xlsx"
-#     df = pd.read_excel(filepath)
+def load_data_local():
+    ## CHANGE THIS ON DIFFERENT MACHINES
+    filepath = r"C:\Users\james\OneDrive - JMS Metaltec\JMS Engineering Team - JMS Engineering Team SharePoint\JMS Master Schedule\testAutomation\bundleStagingSheet.xlsx"
+    df = pd.read_excel(filepath)
 
-#     df["Earliest Process Date"] = pd.to_datetime(
-#         df["Earliest Process Date"],
-#         dayfirst=True,
-#         errors="coerce"
-#     )
-#     df = add_date_columns(df)
-#     df = apply_company_grouping(df)
-#     return df
+    df["Earliest Process Date"] = pd.to_datetime(
+        df["Earliest Process Date"],
+        dayfirst=True,
+        errors="coerce"
+    )
+    df = apply_company_grouping(df)
+    return df
 
-# def load_data_Bmena():
-#     ## CHANGE THIS ON DIFFERENT MACHINES
-#     src_file = src_file = Path.cwd() / r"C:\Users\james\OneDrive - JMS Metaltec\JMS Engineering Team - JMS Engineering Team SharePoint\Paint Schedule\Bmena Finishing Schedule.xlsm"
-#     wb = load_workbook(filename=src_file, data_only=True)
-#     sheet = wb["Schedule"]
-#     lookup_table = sheet.tables["Table1"]
-#     data = sheet[lookup_table.ref]
-#     rows_list=[]
+def load_data_Bmena_local():
+    ## CHANGE THIS ON DIFFERENT MACHINES
+    src_file = src_file = Path.cwd() / r"C:\Users\james\OneDrive - JMS Metaltec\JMS Engineering Team - JMS Engineering Team SharePoint\Paint Schedule\Bmena Finishing Schedule.xlsm"
+    wb = load_workbook(filename=src_file, data_only=True)
+    sheet = wb["Schedule"]
+    lookup_table = sheet.tables["Table1"]
+    data = sheet[lookup_table.ref]
+    rows_list=[]
 
-#     for row in data:
-#         cols=[]
-#         for col in row:
-#             cols.append(col.value)
-#         rows_list.append(cols)
+    for row in data:
+        cols=[]
+        for col in row:
+            cols.append(col.value)
+        rows_list.append(cols)
 
-#     df = pd.DataFrame(data=rows_list[1:], index=None, columns=rows_list[0])
+    df = pd.DataFrame(data=rows_list[1:], index=None, columns=rows_list[0])
 
-#     return df
+    return df
 
 def download_excel_from_sharepoint(site_name: str, file_path:str) -> BytesIO:
     # download from sharepoint and return bytesIO object
@@ -78,7 +77,7 @@ def download_excel_from_sharepoint(site_name: str, file_path:str) -> BytesIO:
 
     return BytesIO(file_response.content)
 @st.cache_data(show_spinner=True)
-def load_data():
+def load_data_sp():
     bytes_io = download_excel_from_sharepoint(
         site_name="JMS Engineering Team",
         file_path="JMS Master Schedule/testAutomation/bundleStagingSheet.xlsx"
@@ -99,7 +98,7 @@ def load_data():
     return df
 
 @st.cache_data(show_spinner=True)
-def load_data_Bmena():
+def load_data_Bmena_sp():
     bytes_io = download_excel_from_sharepoint(
         site_name="JMS Engineering Team",
         file_path="Paint Schedule/Bmena Finishing Schedule.xlsm"
@@ -144,40 +143,50 @@ def load_css(file_name):
     with open(file_name) as f:
         st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
 
-def add_date_columns(df):
-    today = pd.Timestamp.today().normalize()
-    df["Days Late"] = (df["Earliest Process Date"] - today).dt.days
-    df["Is Late"] = df["Days Late"] < 0
-    return df
-
 
 def split_by_urgency(df):
+    today = pd.Timestamp.today().normalize()
     df = df.sort_values(by="Earliest Process Date", ascending=True).reset_index(drop=True)
-    late_df = df[df["Days Late"] < 0]
-    week_df = df[(df["Days Late"] >= 0) & (df["Days Late"] <= 7)]
-    future_df = df[df["Days Late"] > 7]
+
+    df["Week"] = df["Earliest Process Date"].dt.to_period("W")
+    current_week = today.to_period("W")
+
+    late_df = df[df["Earliest Process Date"] < today]
+    week_df = df[
+        (df["Week"] == current_week) &
+        (df["Earliest Process Date"] >= today)         
+    ]
+    future_df = df[df["Week"] > current_week]
     return late_df, week_df, future_df
 
 def apply_filters(df, late_select, incomplete_only, selected_customers, selected_machines, bundle_search):
     filtered_df = df.copy()
 
-    # Late filter
-    late_mask = df["Days Late"] < 0
-    week_mask = (df["Days Late"] >= 0) & (df["Days Late"] <= 7)
-    future_mask = df["Days Late"] > 7
+    # Late Filter -- Calendar Week
+    today = pd.Timestamp.today().normalize()
+    current_week = today.to_period("W")
+
+    due_dates = filtered_df["Earliest Process Date"]
+    due_weeks = due_dates.dt.to_period("W")
+
+    # Status masks (calendar-based)
+    late_mask = due_dates < today
+    week_mask = (due_weeks == current_week) & (due_dates >= today)
+    future_mask = due_weeks > current_week
 
     status_mask = False
 
     if "Late" in late_select:
-        status_mask = status_mask | late_mask
+        status_mask |= late_mask
 
     if "Due This Week" in late_select:
-        status_mask = status_mask | week_mask
+        status_mask |= week_mask
 
     if "Due in Future" in late_select:
-        status_mask = status_mask | future_mask
+        status_mask |= future_mask
 
-    filtered_df = filtered_df[status_mask]
+    if late_select:
+        filtered_df = filtered_df[status_mask]    
 
     # Customer filter
     filtered_df = filtered_df[

@@ -69,7 +69,7 @@ def render_cards(dataframe, column):
 
         bundle_name = row["Bundle/Job"]
         due_raw = row["Earliest Process Date"]
-        days_diff = row["Days Late"]
+        # days_diff = row["Days Late"]
         bundle_type = row["Type"]
         bundle_status = row["Completed?"]
 
@@ -77,9 +77,9 @@ def render_cards(dataframe, column):
             due_date = due_raw.strftime("%d/%m/%Y")
         else:
             due_date = "No date"
-            days_diff = None
+            # days_diff = None
 
-        band_color = urgency_colour(days_diff)
+        band_color = urgency_colour(due_raw)
 
         # checks if details side panel is showing
         is_selected = (st.session_state.selected_bundle == bundle_name)

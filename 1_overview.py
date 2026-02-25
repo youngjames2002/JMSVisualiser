@@ -15,7 +15,7 @@ if "selected_bundle" not in st.session_state:
 st.title("Bundles Data Visualiser")
 
 # load data from sheet
-df = load_data()
+df = load_data_local()
 
 # at a glance placholder
 at_a_glance_container = st.container()

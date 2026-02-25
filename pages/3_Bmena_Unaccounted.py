@@ -9,7 +9,7 @@ load_css('stylesheet.css')
 
 # load data from sheet
 # !!!! CHANGE THIS WHEN SWITCHING MACHINES !!!!
-df = load_data_Bmena()
+df = load_data_Bmena_local()
 
 #title
 st.title("Ballymena Unaccounted Finishing Jobs")
