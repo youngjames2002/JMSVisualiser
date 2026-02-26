@@ -21,6 +21,7 @@ df = load_data_ncr_sp()
 df = clean_ncr_data(df)
 
 st.dataframe(df)
+render_basic_counts(df)
 
 # recorded by
 
