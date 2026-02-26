@@ -90,7 +90,7 @@ def download_excel_from_sharepoint(site_name: str, file_path:str) -> BytesIO:
     headers = {"Authorization": f"Bearer {token['access_token']}"} 
 
     # Get SharePoint site ID
-    site_url = st.secrets["SIT_ID"]
+    site_url = st.secrets["SITE_ID"]
     site_response = requests.get(site_url, headers=headers)
     # debug
     # st.write("Site lookup status:", site_response.status_code)
