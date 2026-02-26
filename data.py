@@ -63,6 +63,7 @@ def load_data_ncr_local():
 
     return df
 
+@st.cache_data(show_spinner=True)
 def download_excel_from_sharepoint(site_name: str, file_path:str) -> BytesIO:
     # download from sharepoint and return bytesIO object
 
@@ -89,7 +90,7 @@ def download_excel_from_sharepoint(site_name: str, file_path:str) -> BytesIO:
     headers = {"Authorization": f"Bearer {token['access_token']}"} 
 
     # Get SharePoint site ID
-    site_url = f"https://graph.microsoft.com/v1.0/sites/{SHAREPOINT_SITE}:/sites/{site_name}:/"
+    site_url = st.secrets["SIT_ID"]
     site_response = requests.get(site_url, headers=headers)
     # debug
     # st.write("Site lookup status:", site_response.status_code)
@@ -112,6 +113,7 @@ def download_excel_from_sharepoint(site_name: str, file_path:str) -> BytesIO:
     file_response.raise_for_status()
 
     return BytesIO(file_response.content)
+
 @st.cache_data(show_spinner=True)
 def load_data_sp():
     bytes_io = download_excel_from_sharepoint(
