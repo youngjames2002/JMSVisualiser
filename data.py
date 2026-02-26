@@ -91,8 +91,9 @@ def download_excel_from_sharepoint(site_name: str, file_path:str) -> BytesIO:
     # Get SharePoint site ID
     site_url = f"https://graph.microsoft.com/v1.0/sites/{SHAREPOINT_SITE}:/sites/{site_name}:/"
     site_response = requests.get(site_url, headers=headers)
-    st.write("Site lookup status:", site_response.status_code)
-    st.write(site_response.json())
+    # debug
+    # st.write("Site lookup status:", site_response.status_code)
+    # st.write(site_response.json())
 
     if site_response.status_code != 200:
         st.error("Site lookup failed")
@@ -100,10 +101,10 @@ def download_excel_from_sharepoint(site_name: str, file_path:str) -> BytesIO:
 
     site_id = site_response.json()["id"]
 
-    # debug
-    drives_url = f"https://graph.microsoft.com/v1.0/sites/{site_id}/drives"
-    drives_response = requests.get(drives_url, headers=headers)
-    st.write(drives_response.json())
+    # # debug
+    # drives_url = f"https://graph.microsoft.com/v1.0/sites/{site_id}/drives"
+    # drives_response = requests.get(drives_url, headers=headers)
+    # st.write(drives_response.json())
 
     # Download the file
     file_url = f"https://graph.microsoft.com/v1.0/sites/{site_id}/drive/root:/{file_path}:/content"
