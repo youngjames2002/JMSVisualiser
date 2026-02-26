@@ -79,8 +79,6 @@ def download_excel_from_sharepoint(site_name: str, file_path:str) -> BytesIO:
         authority=AUTHORITY,
         client_credential=CLIENT_SECRET
     )  
-
-    token = app.acquire_token_for_client(scopes=["https://graph.microsoft.com/.default"])
     # debug st.json(token)  # should contain "access_token" if successful
 
     token = app.acquire_token_for_client(scopes=SCOPE)
@@ -97,13 +95,7 @@ def download_excel_from_sharepoint(site_name: str, file_path:str) -> BytesIO:
     site_id = site_response.json()["id"] 
 
     # Download the file
-    drive_url = f"https://graph.microsoft.com/v1.0/sites/{site_id}/drives"
-    drive_response = requests.get(drive_url, headers=headers)
-    drive_response.raise_for_status()
-
-    drive_id = drive_response.json()["value"][0]["id"]
-
-    file_url = f"https://graph.microsoft.com/v1.0/drives/{drive_id}/root:/{file_path}:/content"
+    file_url = f"https://graph.microsoft.com/v1.0/sites/{site_id}/drive/root:/{file_path}:/content"
     file_response = requests.get(file_url, headers=headers)
     file_response.raise_for_status()
 
@@ -112,7 +104,7 @@ def download_excel_from_sharepoint(site_name: str, file_path:str) -> BytesIO:
 def load_data_sp():
     bytes_io = download_excel_from_sharepoint(
         site_name="JMSEngineeringTeam",
-        file_path="Documents/JMS Engineering Team SharePoint/JMS Master Schedule/testAutomation/bundleStagingSheet.xlsx"
+        file_path="Shared Documents/JMS Engineering Team SharePoint/JMS Master Schedule/testAutomation/bundleStagingSheet.xlsx"
     )
     if bytes_io is None:
         return pd.DataFrame()  # return empty DataFrame if download failed
