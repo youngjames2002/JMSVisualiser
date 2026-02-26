@@ -153,6 +153,38 @@ def load_data_Bmena_sp():
     df = pd.DataFrame(rows_list[1:], columns=rows_list[0])
     return df
 
+@st.cache_data(show_spinner=True)
+def load_data_ncr_sp():
+    bytes_io = download_excel_from_sharepoint(
+        site_name="JMSEngineeringTeam",
+        file_path="JMS Engineering Team SharePoint/NCR Log/NCR Log.xlsm"
+    )
+    if bytes_io is None:
+        return pd.DataFrame()  # return empty DataFrame if download failed
+    
+    wb = load_workbook(filename=bytes_io, data_only=True)
+    sheet = wb["1 - Non-Conformance Log"]
+    lookup_table = sheet.tables["Table1"]
+    data = sheet[lookup_table.ref]
+    rows_list=[]
+
+    for row in data:
+        cols=[]
+        for col in row:
+            cols.append(col.value)
+        rows_list.append(cols)
+
+    df = pd.DataFrame(data=rows_list[1:], index=None, columns=rows_list[0])
+
+    # fix dates
+    df["Date"] = pd.to_datetime(
+        df["Date"],
+        dayfirst=True,
+        errors="coerce"
+    )
+
+    return df
+
 
 def apply_company_grouping(df):
     df = df.copy()
