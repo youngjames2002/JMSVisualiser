@@ -105,7 +105,7 @@ def download_excel_from_sharepoint(site_name: str, file_path:str) -> BytesIO:
 @st.cache_data(show_spinner=True)
 def load_data_sp():
     bytes_io = download_excel_from_sharepoint(
-        site_name="JMS Engineering Team",
+        site_name="JMSEngineeringTeam",
         file_path="JMS Master Schedule/testAutomation/bundleStagingSheet.xlsx"
     )
     if bytes_io is None:
@@ -125,7 +125,7 @@ def load_data_sp():
 @st.cache_data(show_spinner=True)
 def load_data_Bmena_sp():
     bytes_io = download_excel_from_sharepoint(
-        site_name="JMS Engineering Team",
+        site_name="JMSEngineeringTeam",
         file_path="Paint Schedule/Bmena Finishing Schedule.xlsm"
     )
     if bytes_io is None:
