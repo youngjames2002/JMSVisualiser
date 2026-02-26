@@ -17,7 +17,7 @@ tcol2.title("NCR Log Overview")
 render_logo(tcol1)
 
 # load data from sheet
-df = load_data_ncr_local()
+df = load_data_ncr_sp()
 df = clean_ncr_data(df)
 
 st.dataframe(df)
