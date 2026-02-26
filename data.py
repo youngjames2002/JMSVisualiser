@@ -115,7 +115,7 @@ def download_excel_from_sharepoint(site_name: str, file_path:str) -> BytesIO:
 def load_data_sp():
     bytes_io = download_excel_from_sharepoint(
         site_name="JMSEngineeringTeam",
-        file_path="Shared Documents/JMS Engineering Team SharePoint/JMS Master Schedule/testAutomation/bundleStagingSheet.xlsx"
+        file_path="JMS Engineering Team SharePoint/JMS Master Schedule/testAutomation/bundleStagingSheet.xlsx"
     )
     if bytes_io is None:
         return pd.DataFrame()  # return empty DataFrame if download failed
@@ -135,7 +135,7 @@ def load_data_sp():
 def load_data_Bmena_sp():
     bytes_io = download_excel_from_sharepoint(
         site_name="JMSEngineeringTeam",
-        file_path="Shared Documents/JMS Engineering Team SharePoint/Paint Schedule/Bmena Finishing Schedule.xlsm"
+        file_path="JMS Engineering Team SharePoint/Paint Schedule/Bmena Finishing Schedule.xlsm"
     )
     if bytes_io is None:
         return pd.DataFrame()  # return empty DataFrame if download failed
