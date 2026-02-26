@@ -91,7 +91,13 @@ def download_excel_from_sharepoint(site_name: str, file_path:str) -> BytesIO:
     # Get SharePoint site ID
     site_url = f"https://graph.microsoft.com/v1.0/sites/{SHAREPOINT_SITE}:/sites/{site_name}:/"
     site_response = requests.get(site_url, headers=headers)
-    site_response.raise_for_status()
+    st.write("Site lookup status:", site_response.status_code)
+    st.write(site_response.json())
+
+    if site_response.status_code != 200:
+        st.error("Site lookup failed")
+        return None
+
     site_id = site_response.json()["id"]
 
     # debug
