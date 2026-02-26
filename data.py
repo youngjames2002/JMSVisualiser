@@ -88,16 +88,16 @@ def download_excel_from_sharepoint(site_name: str, file_path:str) -> BytesIO:
 
     headers = {"Authorization": f"Bearer {token['access_token']}"} 
 
-    # debug
-    drives_url = f"https://graph.microsoft.com/v1.0/sites/{site_id}/drives"
-    drives_response = requests.get(drives_url, headers=headers)
-    st.write(drives_response.json())
-
     # Get SharePoint site ID
     site_url = f"https://graph.microsoft.com/v1.0/sites/{SHAREPOINT_SITE}:/sites/{site_name}"
     site_response = requests.get(site_url, headers=headers)
     site_response.raise_for_status()
-    site_id = site_response.json()["id"] 
+    site_id = site_response.json()["id"]
+
+    # debug
+    drives_url = f"https://graph.microsoft.com/v1.0/sites/{site_id}/drives"
+    drives_response = requests.get(drives_url, headers=headers)
+    st.write(drives_response.json())
 
     # Download the file
     file_url = f"https://graph.microsoft.com/v1.0/sites/{site_id}/drive/root:/{file_path}:/content"
