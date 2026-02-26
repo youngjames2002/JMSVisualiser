@@ -8,61 +8,22 @@ import plotly.graph_objects as go
 import datetime
 from PIL import Image
 
-def render_cutting_pie_chart(flat_hours, tube_hours):
-    pie_data = pd.DataFrame({
-        "Type": ["FLAT", "TUBE"],
-        "Hours": [flat_hours, tube_hours]
-    })
-
-    pie_data = pie_data[pie_data["Hours"] > 0]
-
-    fig = px.pie(
-    pie_data,
-    names="Type",
-    values="Hours",
-    hole=0.65,
-    color_discrete_sequence=px.colors.sequential.Blues_r
-    )
-
-    # Show hours instead of %
-    fig.update_traces(
-        texttemplate="%{label}<br>%{value:.1f} hrs",
-        textposition="inside"
-    )
-
-    # Turn into semi-circle properly
-    fig.update_layout(
-        showlegend=False,
-        margin=dict(t=10, b=0, l=0, r=0),
-    )
-
-    fig.update_traces(rotation=180)
-
-    fig.update_layout(
-        annotations=[
-            dict(
-                text=f"<b>{flat_hours+tube_hours:.1f} hrs</b>",
-                x=0.5,
-                y=0.25,   # Lower = smaller visual footprint
-                font_size=16,
-                showarrow=False
-            )
-        ]
-    )   
-
-    fig.update_layout(
-        height=350
-    )
-
-    st.plotly_chart(fig, use_container_width=True)
-
-def render_folding_hours(folding_hours):
+def render_hours(flat_hours, tube_hours, folding_hours):
     st.markdown(f"""
     <div class="app-card black">
-        <h1 style="margin:0;">{int(folding_hours)} hours</h1>
+        <h1 style="margin:0;">FLAT: {int(flat_hours)} hours</h1>
     </div>
     """, unsafe_allow_html=True)
-
+    st.markdown(f"""
+    <div class="app-card black">
+        <h1 style="margin:0;">FOLDING: {int(folding_hours)} hours</h1>
+    </div>
+    """, unsafe_allow_html=True)
+    st.markdown(f"""
+    <div class="app-card black">
+        <h1 style="margin:0;">TUBE: {int(tube_hours)} hours</h1>
+    </div>
+    """, unsafe_allow_html=True)
 
 def render_cards(dataframe, column):
     for _, row in dataframe.iterrows():
@@ -71,6 +32,7 @@ def render_cards(dataframe, column):
         due_raw = row["Earliest Process Date"]
         bundle_type = row["Type"]
         bundle_status = row["Completed?"]
+        fold_status = row["Folding Required?"]
 
         if pd.notnull(due_raw):
             due_date = due_raw.strftime("%d/%m/%Y")
@@ -90,6 +52,7 @@ def render_cards(dataframe, column):
                     <div class="bundle-title">{bundle_name}</div>
                     <div class="bundle-date">Due Date: {due_date}</div>
                     <div class="bundle-date">Completion Status: {bundle_status}</div>
+                    <div class="bundle-date">Folding Required? {fold_status}</div>
                     <div class="bundle-type">{bundle_type}</div>
                 </div>
             """, unsafe_allow_html=True)
@@ -109,31 +72,20 @@ def render_cards(dataframe, column):
 def render_at_a_glance(df,late_df, week_df, future_df):
     total_folding, flat_cutting, tube_cutting = calculate_totals(df)
     st.markdown("<h2>At a Glance</h2>", unsafe_allow_html=True)
-    col1, col2, col3, col4 = st.columns(4)
-
-    with col2:
-        st.markdown(
-        """
-        <div style="text-align: center;">
-            <h3>Total Estimated Cutting Hours</h3>
-        </div>
-        """,
-        unsafe_allow_html=True
-        )
-        render_cutting_pie_chart(flat_cutting, tube_cutting)
+    col1, col2, col3 = st.columns(3)
 
     with col1:
         st.markdown(
         """
         <div style="text-align: center;">
-            <h3>Total Estimated Folding Hours</h3>
+            <h3>Total Estimated Hours</h3>
         </div>
         """,
         unsafe_allow_html=True
         )
-        render_folding_hours(total_folding)
+        render_hours(flat_cutting, tube_cutting, total_folding)
 
-    with col3:
+    with col2:
         st.markdown(
         """
         <div style="text-align: center;">
@@ -144,7 +96,7 @@ def render_at_a_glance(df,late_df, week_df, future_df):
         )
         render_late_status_ratio(late_df, week_df, future_df)
 
-    with col4:
+    with col3:
         st.markdown(
         """
         <div style="text-align: center;">
@@ -169,7 +121,8 @@ def render_late_status_ratio(late_df, week_df, future_df):
     ))
 
     fig.update_layout(
-        showlegend=False
+        showlegend=False,
+        yaxis_title="Hours"
     )
     st.plotly_chart(fig, use_container_width=True)
 
@@ -301,7 +254,7 @@ def render_line_chart(df, column):
 def render_filter_section(df):
     st.markdown("## Filters")
 
-    filter_col1, filter_col2, filter_col3, filter_col4, filter_col5 = st.columns(5)
+    filter_col1, filter_col2, filter_col3, filter_col4, filter_col5, filter_col6 = st.columns(6)
 
     df["Customer"] = df["Customer"].fillna("No Customer Assigned")
     df["Machine"] = df["Machine"].fillna("No Machine Assigned")
@@ -311,7 +264,7 @@ def render_filter_section(df):
     default_statuses = "Late", "Due This Week"
     with filter_col1:
         late_select = st.multiselect(
-            "Show Late Bundles Only", 
+            "By Due Date", 
             options=late_statuses, 
             default=default_statuses,
             key="late_filter"
@@ -321,7 +274,7 @@ def render_filter_section(df):
     with filter_col2:
         customers = sorted(df["Customer"].dropna().unique())
         selected_customers = st.multiselect(
-            "Select Customer(s)",
+            "By Customer(s)",
             options=customers,
             default=customers,
             key="customer_filter"
@@ -331,7 +284,7 @@ def render_filter_section(df):
     with filter_col3:
         machines = sorted(df["Machine"].dropna().unique())
         selected_machines = st.multiselect(
-            "Select Machine(s)",
+            "By Machine(s)",
             options=machines,
             default=machines,
             key="machine_filter"
@@ -340,15 +293,19 @@ def render_filter_section(df):
     # incomplete toggle
     with filter_col4:
         incomplete_only = st.toggle("Show Incomplete Bundles Only", value=True)
+    
+    # folding toggle
+    with filter_col5:
+        folding_required = st.toggle("Show only Bundles Requiring Folding?", value=False)
 
     # search for bundle title
-    with filter_col5:
+    with filter_col6:
         bundle_search = st.text_input("Search by Bundle Name",
         placeholder="Type here...",
         key="bundle_search"                             
     )
 
-    return late_select, incomplete_only, selected_customers, selected_machines, bundle_search
+    return late_select, incomplete_only, selected_customers, selected_machines, bundle_search, folding_required
 
 def render_progress_bar(df, column):
     total = len(df)

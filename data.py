@@ -228,7 +228,7 @@ def split_by_urgency(df):
     future_df = df[df["Week"] > current_week]
     return late_df, week_df, future_df
 
-def apply_filters(df, late_select, incomplete_only, selected_customers, selected_machines, bundle_search):
+def apply_filters(df, late_select, incomplete_only, selected_customers, selected_machines, bundle_search, folding_required):
     filtered_df = df.copy()
 
     # Late Filter -- Calendar Week
@@ -280,6 +280,10 @@ def apply_filters(df, late_select, incomplete_only, selected_customers, selected
             .astype(str)
             .str.contains(bundle_search, case=False, na=False)
     ]
+        
+    # folding toggle
+    if folding_required:
+        filtered_df = filtered_df[filtered_df["Folding Required?"] == "Yes"]
 
     return filtered_df
 
