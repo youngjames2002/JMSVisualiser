@@ -118,7 +118,6 @@ def load_data_sp():
         dayfirst=True,
         errors="coerce"
     )
-    df = add_date_columns(df)
     df = apply_company_grouping(df)
     return df
 

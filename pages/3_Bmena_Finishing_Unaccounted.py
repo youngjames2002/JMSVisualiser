@@ -9,7 +9,7 @@ load_css('stylesheet.css')
 
 # load data from sheet
 # !!!! CHANGE THIS WHEN SWITCHING MACHINES !!!!
-df = load_data_Bmena_local()
+df = load_data_Bmena_sp()
 
 #title
 tcol1, tcol2 = st.columns([1,4])

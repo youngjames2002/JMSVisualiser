@@ -42,3 +42,9 @@ st.dataframe(df)
 
 # total internal ncrs is just a number
 
+
+# PLAN for this
+# clean data
+# present basic info
+# read data from statii
+# use that as comparison to create percentage charts and graphs and more advanced details.

@@ -20,7 +20,7 @@ tcol2.title("Bundles Overview")
 render_logo(tcol1)
 
 # load data from sheet
-df = load_data_local()
+df = load_data_sp()
 
 # at a glance placholder
 at_a_glance_container = st.container()
