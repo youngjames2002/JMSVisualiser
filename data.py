@@ -4,6 +4,7 @@ from openpyxl import load_workbook
 from pathlib import Path
 from io import BytesIO
 import msal
+import requests
 
 def load_data_local():
     ## CHANGE THIS ON DIFFERENT MACHINES
@@ -80,7 +81,7 @@ def download_excel_from_sharepoint(site_name: str, file_path:str) -> BytesIO:
     )  
 
     token = app.acquire_token_for_client(scopes=["https://graph.microsoft.com/.default"])
-    st.json(token)  # should contain "access_token" if successful
+    # debug st.json(token)  # should contain "access_token" if successful
 
     token = app.acquire_token_for_client(scopes=SCOPE)
     if "access_token" not in token:
