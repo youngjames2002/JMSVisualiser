@@ -97,7 +97,13 @@ def download_excel_from_sharepoint(site_name: str, file_path:str) -> BytesIO:
     site_id = site_response.json()["id"] 
 
     # Download the file
-    file_url = f"https://graph.microsoft.com/v1.0/sites/{site_id}/drive/root:/{file_path}:/content"
+    drive_url = f"https://graph.microsoft.com/v1.0/sites/{site_id}/drives"
+    drive_response = requests.get(drive_url, headers=headers)
+    drive_response.raise_for_status()
+
+    drive_id = drive_response.json()["value"][0]["id"]
+
+    file_url = f"https://graph.microsoft.com/v1.0/drives/{drive_id}/root:/{file_path}:/content"
     file_response = requests.get(file_url, headers=headers)
     file_response.raise_for_status()
 
