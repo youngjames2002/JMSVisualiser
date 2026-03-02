@@ -20,24 +20,28 @@ render_logo(tcol1)
 df = load_data_ncr_sp()
 df = clean_ncr_data(df)
 
-# render overview dataframes
+# date filter
 col1, col2 = st.columns([1, 4])
 with col1:
     date_filter = st.date_input("Showing NCRS after this date: ", value=datetime.datetime(2025,1,1))
 date_filter = pd.to_datetime(date_filter)
 df = df[df["Date"] >= date_filter]
 
+# render charts and progress bars
+col1, col2, col3 = st.columns(3)
+render_internal_chart(df, col2)
+render_sales_order_chart(df, date_filter, col1)
+render_progress_bars(df, col3)
+
+# render overview dataframes
 col1, col2, col3, col4 = st.columns(4)
 render_df(df, col1, "Customer Grouped")
 render_df(df, col2, "Department")
 render_df(df, col3, "Non Conformance Received/Recorded By")
 render_df(df, col4, "Root Cause")
 
-# render charts and progress bars
-col1, col2, col3 = st.columns(3)
-render_internal_chart(df, col2)
-render_sales_order_chart(df, date_filter, col1)
-render_progress_bars(df, col3)
+st.markdown("## FULL NCR LOG")
+st.dataframe(df)
 
 # ts debugs
 debug = st.toggle("View Debug Data?", value=False)

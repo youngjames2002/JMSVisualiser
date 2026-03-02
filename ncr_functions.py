@@ -52,7 +52,6 @@ def render_debug_data(df, date_filter):
     # total number of ncrs
     date_filter = pd.to_datetime(date_filter)
     date_filtered_df = df[df["Date"] >= date_filter]
-    st.dataframe(date_filtered_df)
     st.markdown(f"NCRs from {date_filter}: {len(date_filtered_df.index)}")
 
     # number by department
@@ -107,15 +106,15 @@ def render_progress_bars(df, col):
     # Suggested Corrective Action
     SCA_completed = len(df) - (df["Suggested Corrective Action Implemented"] == "Yes").sum()
     SCA_percent = round((SCA_completed/len(df)),2)
-    col.progress(float(SCA_percent), f"Number of NCRS with suggested corrective action completed: {SCA_completed} ({SCA_percent*100}%)")
+    col.progress(float(SCA_percent), f"NCRS with suggested corrective action completed: {SCA_completed} ({SCA_percent*100}%)")
     # Returned to Customer
     RTC_completed = len(df) - (df["Returned to Customer"] == "Yes").sum()
     RTC_percent = round((RTC_completed/len(df)),2)
-    col.progress(float(RTC_percent), f"Number of NCRS returned to customer: {RTC_completed} ({RTC_percent*100}%)")
+    col.progress(float(RTC_percent), f"NCRS returned to customer: {RTC_completed} ({RTC_percent*100}%)")
     # Report Done
     report_done = len(df) - (df["Report Done"] == "Yes").sum()
     report_percent = round((report_done/len(df)),2)
-    col.progress(float(report_percent), f"Number of NCRS with report completed: {int(report_done)} ({report_percent*100:.1f}%)")
+    col.progress(float(report_percent), f"NCRS with report completed: {int(report_done)} ({report_percent*100:.1f}%)")
 
 def render_internal_chart(df, col):
     counts = df["Customer NCR No."].value_counts()
@@ -154,8 +153,8 @@ def render_sales_order_chart(df, date_filter, col):
     num_ncr = len(df)
 
     # visualise data
-    col.metric(f"Number of NCRs since {date_filter}:", num_ncr)
-    col.metric(f"Number of SOs since {date_filter}:", num_so)
+    col.metric(f"Number of NCRs:", num_ncr)
+    col.metric(f"Number of SOs:", num_so)
 
     pie_data = pd.DataFrame({
         "Type": ["NCRs", "SOs"],
