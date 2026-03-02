@@ -21,7 +21,8 @@ df = load_data_ncr_sp()
 df = clean_ncr_data(df)
 
 st.dataframe(df)
-render_basic_counts(df)
+date_filter = st.date_input("Showing NCRS after this date: ", value=datetime.datetime(2025,1,1))
+render_basic_counts(df, date_filter)
 
 # recorded by
 

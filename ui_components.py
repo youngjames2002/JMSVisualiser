@@ -477,6 +477,7 @@ def render_bmena_finishing_cards(df):
     filtered_df = bmena_finishing_filters(df)
     # filtered_df = df # debug
     # st.dataframe(filtered_df) # debug
+    st.markdown(f"Number Outstanding: {len(filtered_df)}")
     for _, row in filtered_df.iterrows():
 
         with st.container():
