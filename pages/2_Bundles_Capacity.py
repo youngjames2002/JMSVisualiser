@@ -27,8 +27,8 @@ render_logo(tcol1)
 # replicate filters most likely?
 
 #filters
-late_only, incomplete_only, selected_customers, selected_machines, bundle_search = render_filter_section(df)
-filtered_df = apply_filters(df, late_only, incomplete_only, selected_customers, selected_machines, bundle_search)
+late_only, incomplete_only, selected_customers, selected_machines, bundle_search,folding_required = render_filter_section(df)
+filtered_df = apply_filters(df, late_only, incomplete_only, selected_customers, selected_machines, bundle_search,folding_required)
 
 #column titles
 col1, col2, col3 = st.columns(3)
