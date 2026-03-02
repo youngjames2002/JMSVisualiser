@@ -272,7 +272,7 @@ def render_filter_section(df):
 
     # Customer multi-select
     with filter_col2:
-        customers = sorted(df["Customer"].dropna().unique())
+        customers = sorted(df["Customer"])
         selected_customers = st.multiselect(
             "By Customer(s)",
             options=customers,
@@ -433,8 +433,8 @@ def render_capacity_chart(needed_hours, sevenfive_hours,max_hours, bar_colour,co
     # 75% Capacity line
     fig.add_hline(
         y=sevenfive_hours,
-        line=dict(color="#f39c12", width=2, dash="dash"),
-        annotation_text="75% Capacity",
+        line=dict(color="black", width=7, dash="dash"),
+        annotation_text="<b>75% Capacity</b>",
         annotation_position="top right",
         annotation_font_size=20,
         annotation_font=dict(size=12)
@@ -443,8 +443,8 @@ def render_capacity_chart(needed_hours, sevenfive_hours,max_hours, bar_colour,co
     # Max Capacity line
     fig.add_hline(
         y=max_hours,
-        line=dict(color="#d64545", width=3),
-        annotation_text="Max Capacity",
+        line=dict(color="black", width=7),
+        annotation_text="<b>MAX Capacity</b>",
         annotation_position="top right",
         annotation_font_size=20,
         annotation_font=dict(size=12)

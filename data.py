@@ -2,6 +2,7 @@ import pandas as pd
 import streamlit as st
 from openpyxl import load_workbook
 from pathlib import Path
+import io
 from io import BytesIO
 import msal
 import requests
@@ -185,11 +186,22 @@ def load_data_ncr_sp():
 
     return df
 
+def load_so_sp():
+    bytes_io = download_excel_from_sharepoint(
+        site_name="JMSEngineeringTeam",
+        file_path="JMS Engineering Team SharePoint/NCR Log/ALL SALES ORDERS.csv"
+    )
+    if bytes_io is None:
+        return pd.DataFrame()  # return empty DataFrame if download failed
+    
+    df = pd.read_csv(io.BytesIO(bytes_io.getvalue()))
+    return df
+
 
 def apply_company_grouping(df):
     df = df.copy()
 
-    df["Customer Grouped"] = df["Customer"].str.upper().str.strip()
+    df["Customer Grouped"] = df["Customer"].str.upper().str.strip().replace({"WRIGHT BUS": "WRIGHTBUS"})
 
     COMPANY_KEYWORDS = [
         "BAMFORD",
@@ -197,7 +209,8 @@ def apply_company_grouping(df):
         "TOBERMORE",
         "FARLOW",
         "SANDVIK",
-        "CROSSLAND"
+        "CROSSLAND",
+        "WRIGHTBUS"
     ]
 
     for keyword in COMPANY_KEYWORDS:
