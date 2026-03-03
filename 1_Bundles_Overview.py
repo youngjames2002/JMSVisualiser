@@ -50,3 +50,10 @@ render_line_chart(filtered_df, col4)
 
 # progress bar of complete hours
 render_progress_bar(filtered_df, col4)
+
+# refresh data
+if st.button("Refresh Data"):
+    st.cache_data.clear()
+    st.rerun()
+
+st.dataframe(df)
