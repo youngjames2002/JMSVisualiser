@@ -14,4 +14,4 @@ render_logo(tcol1)
 
 #display cards
 st.markdown("Showing all records with due date this week or before, with no value for delivery date, supplier or comments")
-render_bmena_finishing_cards(df)
+render_bmena_finishing_cards
