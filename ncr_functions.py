@@ -137,7 +137,7 @@ def render_internal_chart(df, col):
     )
     col.plotly_chart(fig, use_container_width=False)
 
-def render_sales_order_chart(df, date_filter, col):
+def render_sales_order_impact(df, date_filter, col):
     # read in all sales orders since date that is filtered from statii
     # done reading from a hardcoded CSV file, will upgrade to be an API call when we get that functionality from statii
     # have to do a dump out and save to NCR Log/ALL SALES ORDERS.csv on sharepoint
@@ -159,10 +159,70 @@ def render_sales_order_chart(df, date_filter, col):
     num_so = len(so_df)
     num_ncr = len(df)
     num_affected = len(sos_affected)
-    num_unaffected = num_so - num_affected
 
     # visualise data
     col.metric(f"Total Number of NCRs:", num_ncr)
     col.metric(f"Number of NCRS with SO attached:", num_affected)
     col.metric(f"Total Number of SOs:", num_so)
     col.metric(f"Affected SOs %:", round(((num_affected/num_so)*100),2))
+
+    # weekly comparison
+    weekly = calculate_weekly_impact(df, so_df)
+    this_week = weekly.iloc[-1]["Affected %"]
+    this_week_affected = int(weekly.iloc[-1]["Affected SOs"])
+    this_week_total = weekly.iloc[-1]["Total SOs"]
+    last_week = weekly.iloc[-2]["Affected %"] if len(weekly) > 1 else 0
+    last_week_affected = int(weekly.iloc[-2]["Affected SOs"]) if len(weekly) > 1 else 0
+    last_week_total = weekly.iloc[-2]["Total SOs"] if len(weekly) > 1 else 0
+
+    col.metric(
+        "This Week Affected SOs %:",
+        f"{this_week:.2f}% ({this_week_affected}/{this_week_total})",
+        delta=f"{this_week - last_week:.2f}% vs last week ({last_week_affected}/{last_week_total})",
+        delta_color="inverse"
+    )
+
+    return weekly
+
+def calculate_weekly_impact(df, so_df):
+    df["Date"] = pd.to_datetime(df["Date"])
+    so_df["Date Created"] = pd.to_datetime(so_df["Date Created"])
+
+    # Create week column
+    df["Week"] = df["Date"].dt.to_period("W").dt.start_time
+    so_df["Week"] = so_df["Date Created"].dt.to_period("W").dt.start_time
+
+    # Weekly total SOs
+    weekly_so = so_df.groupby("Week")["S.O. No."].nunique().reset_index(name="Total SOs")
+
+    # Weekly affected SOs
+    affected = df[df["Original sales Order"].notna()]
+    weekly_affected = affected.groupby("Week")["Original sales Order"].nunique().reset_index(name="Affected SOs")
+
+    # Merge
+    weekly = weekly_so.merge(weekly_affected, on="Week", how="left").fillna(0)
+
+    # Calculate %
+    weekly["Affected %"] = (weekly["Affected SOs"] / weekly["Total SOs"]) * 100
+
+    return weekly
+
+def render_impact_chart(weekly, col):
+    fig = px.line(
+        weekly,
+        x="Week",
+        y="Affected %",
+        markers=True
+    )
+
+    fig.update_traces(
+        line=dict(color="red", width=3),
+        marker=dict(size=8, color="red")
+    )
+
+    fig.update_layout(
+        yaxis_title="Affected SO %",
+        xaxis_title="Week",
+    )
+
+    col.plotly_chart(fig, use_container_width=True)

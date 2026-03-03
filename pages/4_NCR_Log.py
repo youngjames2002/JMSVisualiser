@@ -27,14 +27,21 @@ with col1:
 date_filter = pd.to_datetime(date_filter)
 df = df[df["Date"] >= date_filter]
 
-# render charts and progress bars
-col1, col2, col3 = st.columns(3)
+# sales order metrics and chart
+col1, col2 = st.columns(2)
 col1.markdown("## Sales Orders Impact")
-col2.markdown("## Internal vs External Count")
-col3.markdown("## Completion Status")
-render_internal_chart(df, col2)
-render_sales_order_chart(df, date_filter, col1)
-render_progress_bars(df, col3)
+col2.markdown("## Impact Over Time")
+weekly = render_sales_order_impact(df, date_filter, col1)
+render_impact_chart(weekly, col2)
+
+
+# internal/external and completion status
+col1, col2 = st.columns(2)
+col1.markdown("## Internal vs External Count")
+col2.markdown("## Completion Status")
+render_internal_chart(df, col1)
+render_progress_bars(df, col2)
+
 
 # render overview dataframes
 col1, col2, col3, col4 = st.columns(4)
