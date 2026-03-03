@@ -35,3 +35,10 @@ col1, col2, col3 = st.columns(3)
 render_capacity("Tube Cutting", filtered_df, col1)
 render_capacity("Flat Cutting", filtered_df, col2)
 render_capacity("Folding", filtered_df, col3)
+
+# refresh data
+if st.button("Refresh Data"):
+    st.cache_data.clear()
+    st.rerun()
+    df = load_data_sp()
+st.markdown("Note: It will take a few minutes after changes are made on sharepoint before they can register on the dashboard")

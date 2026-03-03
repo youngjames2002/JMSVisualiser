@@ -57,10 +57,20 @@ render_df(df, col4, "Root Cause")
 st.markdown("## FULL NCR LOG")
 st.dataframe(df)
 
+# refresh data
+if st.button("Refresh Data"):
+    st.cache_data.clear()
+    st.rerun()
+    df = load_data_ncr_sp()
+    df = clean_ncr_data(df)
+st.markdown("Note: It will take a few minutes after changes are made on sharepoint before they can register on the dashboard")
+
 # ts debugs
 debug = st.toggle("View Debug Data?", value=False)
 if debug:
     render_debug_data(df, date_filter)
+
+
 
 # NOTES
 # recorded by
