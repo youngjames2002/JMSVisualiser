@@ -22,12 +22,6 @@ render_logo(tcol1)
 # load data from sheet
 df = load_data_sp()
 
-# refresh data
-if st.button("Refresh Data"):
-    st.cache_data.clear()
-    st.rerun()
-    df = load_data_sp()
-
 # at a glance placholder
 at_a_glance_container = st.container()
 
@@ -56,3 +50,10 @@ render_line_chart(filtered_df, col4)
 
 # progress bar of complete hours
 render_progress_bar(filtered_df, col4)
+
+# refresh data
+if st.button("Refresh Data"):
+    st.cache_data.clear()
+    st.rerun()
+    df = load_data_sp()
+st.markdown("Note: It will take a few minutes after changes are made on sharepoint before they can register on the dashboard")
