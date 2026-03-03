@@ -23,21 +23,28 @@ df = clean_ncr_data(df)
 # date filter
 col1, col2 = st.columns([1, 4])
 with col1:
-    date_filter = st.date_input("Showing NCRS after this date: ", value=datetime.datetime(2025,1,1))
+    date_filter = st.date_input("Showing Only Data after this date: ", value=datetime.datetime(2025,1,1))
 date_filter = pd.to_datetime(date_filter)
 df = df[df["Date"] >= date_filter]
 
 # render charts and progress bars
 col1, col2, col3 = st.columns(3)
+col1.markdown("## Sales Orders Impact")
+col2.markdown("## Internal vs External Count")
+col3.markdown("## Completion Status")
 render_internal_chart(df, col2)
 render_sales_order_chart(df, date_filter, col1)
 render_progress_bars(df, col3)
 
 # render overview dataframes
 col1, col2, col3, col4 = st.columns(4)
+col1.markdown(f"Count By Customer")
 render_df(df, col1, "Customer Grouped")
+col2.markdown(f"Count By Department")
 render_df(df, col2, "Department")
+col3.markdown(f"Count By Person Reporting")
 render_df(df, col3, "Non Conformance Received/Recorded By")
+col4.markdown(f"Count By Root Cause")
 render_df(df, col4, "Root Cause")
 
 st.markdown("## FULL NCR LOG")

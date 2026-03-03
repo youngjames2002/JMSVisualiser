@@ -92,7 +92,6 @@ def list_and_df(column, df):
     st.dataframe(unique_df) 
 
 def render_df(df, col, header):
-    col.markdown(f"Count By {header}")
     unique_df = (
         df[header].value_counts().reset_index()
     )
@@ -149,22 +148,21 @@ def render_sales_order_chart(df, date_filter, col):
     so_df = so_df[so_df["Date Created"] >= date_filter]
     # st.dataframe(so_df) # debug
 
+    # make sure SO list is unqiue
+    so_df["S.O. No."].dropna().unique()
+    sos_affected = (
+        df["Original sales Order"].dropna().astype(str).str.strip()
+    )
+    sos_affected = sos_affected[~sos_affected.str.upper().isin(["N/A", "NA", "NONE", ""])]
+    sos_affected = sos_affected.unique()
+
     num_so = len(so_df)
     num_ncr = len(df)
+    num_affected = len(sos_affected)
+    num_unaffected = num_so - num_affected
 
     # visualise data
-    col.metric(f"Number of NCRs:", num_ncr)
-    col.metric(f"Number of SOs:", num_so)
-
-    pie_data = pd.DataFrame({
-        "Type": ["NCRs", "SOs"],
-        "Count": [num_ncr, num_so]
-    })
-
-
-    # Pie chart for proportion
-    fig = px.pie(
-        pie_data, names="Type", values="Count", hole=0.4, color="Type",
-        color_discrete_map={"NCRs": "#2ecc71", "SOs": "#3498db"}
-    )
-    col.plotly_chart(fig, use_container_width=False)
+    col.metric(f"Total Number of NCRs:", num_ncr)
+    col.metric(f"Number of NCRS with SO attached:", num_affected)
+    col.metric(f"Total Number of SOs:", num_so)
+    col.metric(f"Affected SOs %:", round(((num_affected/num_so)*100),2))
