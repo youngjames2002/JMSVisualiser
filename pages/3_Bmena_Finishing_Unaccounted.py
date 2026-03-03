@@ -7,10 +7,6 @@ st.set_page_config(layout="wide")
 #load css
 load_css('stylesheet.css')
 
-# load data from sheet
-# !!!! CHANGE THIS WHEN SWITCHING MACHINES !!!!
-df = load_data_Bmena_sp()
-
 #title
 tcol1, tcol2 = st.columns([1,4])
 tcol2.title("Ballymena Unaccounted Finishing Jobs")
