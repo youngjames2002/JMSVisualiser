@@ -199,9 +199,8 @@ def load_so_sp():
 
 
 def apply_company_grouping(df):
-    df = df.copy()
-
-    df["Customer Grouped"] = df["Customer"].str.upper().str.strip().replace({"WRIGHT BUS": "WRIGHTBUS"})
+    df=df.copy()
+    df["Customer Grouped"] = df["Customer"].str.upper().str.strip()
 
     COMPANY_KEYWORDS = [
         "BAMFORD",

@@ -272,7 +272,7 @@ def render_filter_section(df):
 
     # Customer multi-select
     with filter_col2:
-        customers = sorted(df["Customer"])
+        customers = sorted(df["Customer Grouped"].dropna().unique())
         selected_customers = st.multiselect(
             "By Customer(s)",
             options=customers,
