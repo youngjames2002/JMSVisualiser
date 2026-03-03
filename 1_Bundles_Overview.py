@@ -55,5 +55,6 @@ render_progress_bar(filtered_df, col4)
 if st.button("Refresh Data"):
     st.cache_data.clear()
     st.rerun()
+    df = load_data_sp()
 
 st.dataframe(df)
