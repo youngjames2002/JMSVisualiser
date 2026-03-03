@@ -473,8 +473,7 @@ def render_capacity_chart(needed_hours, sevenfive_hours,max_hours, bar_colour,co
 
     col.plotly_chart(fig, use_container_width=True)
 
-def render_bmena_finishing_cards():
-    df = load_data_Bmena_sp()
+def render_bmena_finishing_cards(df):
     filtered_df = bmena_finishing_filters(df)
     # filtered_df = df # debug
     # st.dataframe(filtered_df) # debug
