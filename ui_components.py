@@ -127,6 +127,7 @@ def render_late_status_ratio(late_df, week_df, future_df):
     st.plotly_chart(fig, use_container_width=True)
 
 def render_top_customers(df):
+    # DEBUG st.dataframe(df[["Customer Grouped", "Estimated Bundle Time (Hours)"]])
     top3 = (
         df.groupby("Customer Grouped")["Estimated Bundle Time (Hours)"]
         .sum()
