@@ -144,8 +144,8 @@ def render_sales_order_impact(df, date_filter, col):
     so_df = load_so_sp()
     # filter so_df by date filter
     date_filter = pd.to_datetime(date_filter)
-    so_df["Date Created"] = pd.to_datetime(so_df["Date Created"])
-    so_df = so_df[so_df["Date Created"] >= date_filter]
+    so_df["Date Required"] = pd.to_datetime(so_df["Date Required"])
+    so_df = so_df[so_df["Date Required"] >= date_filter]
     # st.dataframe(so_df) # debug
 
     # make sure SO list is unqiue
@@ -186,11 +186,11 @@ def render_sales_order_impact(df, date_filter, col):
 
 def calculate_weekly_impact(df, so_df):
     df["Date"] = pd.to_datetime(df["Date"])
-    so_df["Date Created"] = pd.to_datetime(so_df["Date Created"])
+    so_df["Date Required"] = pd.to_datetime(so_df["Date Required"])
 
     # Create week column
     df["Week"] = df["Date"].dt.to_period("W").dt.start_time
-    so_df["Week"] = so_df["Date Created"].dt.to_period("W").dt.start_time
+    so_df["Week"] = so_df["Date Required"].dt.to_period("W").dt.start_time
 
     # Weekly total SOs
     weekly_so = so_df.groupby("Week")["S.O. No."].nunique().reset_index(name="Total SOs")
