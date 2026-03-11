@@ -42,7 +42,7 @@ if raw_data:
     # filter to remove customers who dont get painted
     df = df[~df["Customer"].str.contains("Bamford|Wright|Cunningham", case=False, na=False)]
     # filter for specifications that are paint
-    df = df[df["Specification"].str.contains("RAL|prime", case=False, na=False)]
+    df = df[df["Specification"].str.contains(r"\bRAL\b|\bprime\b|\bpaint\b", case=False, na=False)]
 
     # add week column and sort by that
     df["Date Promised"] = pd.to_datetime(
