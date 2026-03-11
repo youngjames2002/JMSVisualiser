@@ -19,18 +19,24 @@ capacity = 35000
 close_call = 30000
 
 # take input
-st.markdown("Go to Sales Order Lines in Statii and export the report 'Paint Capacity'")
-st.markdown("It should show the columns Line No, Customer, Specification, Price and Date Promised")
-st.markdown("Download that and then click 'open'. This should open a spreadsheet. Select All and copy, then paste that into the box below")
+st.markdown("""
+Go to Sales Order Lines in Statii and export the report **'Paint Capacity'**  
+It should show the columns Line No, Customer, Specification, Price and Date Promised  
+Download that and then click 'open'. This should open a spreadsheet. Select All and copy, then paste that into the box below
+""")
 raw_data = st.text_area("Paste Statii Dump here")
 st.markdown("Hit Ctrl+Enter to generate Capacity Graphs")
 
 # st.markdown(raw_data)
 if raw_data:
     # read data to df
-    df = pd.read_csv(
-        StringIO(raw_data), sep="\t", engine="python", quotechar='"', skip_blank_lines=True
-    )
+    try: 
+        df = pd.read_csv(
+            StringIO(raw_data), sep="\t", engine="python", quotechar='"', skip_blank_lines=True
+        )
+    except Exception as e:
+        st.error(f"Cannot read data - ensure data is input from statii correctly - {e}")
+        st.stop()
 
     # clean data
     # filter to remove customers who dont get painted
@@ -48,8 +54,6 @@ if raw_data:
     df = df[df["Week Due"] >= current_week]
     df["Week Label"] = df["Week Due"].dt.strftime("%d %b")
     df = df.sort_values("Week Due", ascending=True)
-
-    #st.dataframe(df)
 
     # render graph
     weekly = df.groupby("Week Due")["Price"].sum().sort_index().reset_index()
