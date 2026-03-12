@@ -1,1 +1,6 @@
 .streamlit/secrets.toml
+__pycache__\data.cpython-314.pyc
+__pycache__\metricsdata.cpython-314.pyc
+__pycache__\ncr_functions.cpython-314.pyc
+__pycache__\ui.cpython-314.pyc
+__pycache__\ui_components.cpython-314.pyc
