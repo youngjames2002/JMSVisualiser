@@ -2,6 +2,7 @@ import streamlit as st
 import plotly.express as px
 import pandas as pd
 from data import *
+from datetime import timedelta
 
 def clean_ncr_data(df):
     # clean data massively
@@ -137,11 +138,10 @@ def render_internal_chart(df, col):
     )
     col.plotly_chart(fig, use_container_width=False)
 
-def render_sales_order_impact(df, date_filter, col):
+def render_sales_order_impact(df, so_df, date_filter, col):
     # read in all sales orders since date that is filtered from statii
     # done reading from a hardcoded CSV file, will upgrade to be an API call when we get that functionality from statii
     # have to do a dump out and save to NCR Log/ALL SALES ORDERS.csv on sharepoint
-    so_df = load_so_sp()
     # filter so_df by date filter
     date_filter = pd.to_datetime(date_filter)
     so_df["Date Required"] = pd.to_datetime(so_df["Date Required"])
@@ -160,29 +160,26 @@ def render_sales_order_impact(df, date_filter, col):
     num_ncr = len(df)
     num_affected = len(sos_affected)
 
+    date_display = date_filter.strftime('%d %b %Y')
+
     # visualise data
-    col.metric(f"Total Number of NCRs:", num_ncr)
+    col.metric(f"Total Number of NCRs since {date_display}:", num_ncr)
     col.metric(f"Number of NCRS with SO attached:", num_affected)
-    col.metric(f"Total Number of SOs:", num_so)
+    col.metric(f"Total Number of SOs since {date_display}:", num_so)
     col.metric(f"Affected SOs %:", round(((num_affected/num_so)*100),2))
 
     # weekly comparison
-    weekly = calculate_weekly_impact(df, so_df)
-    this_week = weekly.iloc[-1]["Affected %"]
-    this_week_affected = int(weekly.iloc[-1]["Affected SOs"])
-    this_week_total = weekly.iloc[-1]["Total SOs"]
-    last_week = weekly.iloc[-2]["Affected %"] if len(weekly) > 1 else 0
-    last_week_affected = int(weekly.iloc[-2]["Affected SOs"]) if len(weekly) > 1 else 0
-    last_week_total = weekly.iloc[-2]["Total SOs"] if len(weekly) > 1 else 0
+    today = pd.Timestamp.today()
+    this_week = len(df[df["Date"] >= today - pd.Timedelta(days=7)])
+    last_week = len(df[(df["Date"] >= today - pd.Timedelta(days=14)) & (df["Date"] < today - pd.Timedelta(days=7))])
+    delta = this_week - last_week
 
     col.metric(
-        "This Week Affected SOs %:",
-        f"{this_week:.2f}% ({this_week_affected}/{this_week_total})",
-        delta=f"{this_week - last_week:.2f}% vs last week ({last_week_affected}/{last_week_total})",
+        "NCRs Logged This Week",
+        this_week,
+        delta=f"{delta:+d} vs last week ({last_week})",
         delta_color="inverse"
     )
-
-    return weekly
 
 def calculate_weekly_impact(df, so_df):
     df["Date"] = pd.to_datetime(df["Date"])
@@ -207,9 +204,18 @@ def calculate_weekly_impact(df, so_df):
 
     return weekly
 
-def render_impact_chart(weekly, col):
+def render_impact_chart(weekly, date_filter, col):
+    weekly = weekly[weekly["Week"] >= date_filter]
+    # filter to only show chart up to latest NCR
+    last_week_with_value = weekly.loc[weekly["Affected %"] > 0, "Week"].max()
+    if pd.isna(last_week_with_value):
+        col.write("No affected SOs to display.")
+        return
+    max_show_week = last_week_with_value + timedelta(weeks=2)
+    weekly_filtered = weekly[weekly["Week"] <= max_show_week]
+
     fig = px.line(
-        weekly,
+        weekly_filtered,
         x="Week",
         y="Affected %",
         markers=True

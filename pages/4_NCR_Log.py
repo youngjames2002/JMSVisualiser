@@ -31,8 +31,10 @@ df = df[df["Date"] >= date_filter]
 col1, col2 = st.columns(2)
 col1.markdown("## Sales Orders Impact")
 col2.markdown("## Impact Over Time")
-weekly = render_sales_order_impact(df, date_filter, col1)
-render_impact_chart(weekly, col2)
+so_df = load_so_sp()
+render_sales_order_impact(df, so_df, date_filter, col1)
+weekly = calculate_weekly_impact(df, so_df)
+render_impact_chart(weekly,date_filter,col2)
 
 
 # internal/external and completion status
@@ -54,7 +56,7 @@ render_df(df, col3, "Non Conformance Received/Recorded By")
 col4.markdown(f"Count By Root Cause")
 render_df(df, col4, "Root Cause")
 
-st.markdown("## FULL NCR LOG")
+st.markdown(f"## FULL NCR LOG SINCE {date_filter.strftime('%d %b %Y')}")
 st.dataframe(df)
 
 # refresh data
