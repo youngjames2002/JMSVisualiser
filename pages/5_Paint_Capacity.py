@@ -49,15 +49,34 @@ if raw_data:
         df["Date Promised"], dayfirst=True, errors="coerce"
     )
     df = df.dropna(subset=["Date Promised"])
+    df["Date Promised"] = df["Date Promised"] - pd.Timedelta(days=2)   # paint date is 2 days before so date
     df["Week Due"] = df["Date Promised"].dt.to_period("W-FRI").apply(lambda r: r.end_time)
     current_week = pd.Timestamp.today().to_period("W-FRI").end_time
     df = df[df["Week Due"] >= current_week]
     df["Week Label"] = df["Week Due"].dt.strftime("%d %b")
     df = df.sort_values("Week Due", ascending=True)
 
+    day_week_toggle = st.toggle("Toggle Weekly View vs Daily View (Next Month)", value="False")
+    if day_week_toggle:
+        next_month = pd.Timestamp.today() + pd.Timedelta(days=30)
+        plot_df = df[df["Date Promised"] <= next_month].copy()
+        plot_df["Plot Group"] = plot_df["Date Promised"].dt.strftime("%d %b")
+        group_col = "Date Promised"
+        label_col = "Plot Group"
+        capacity = capacity/4
+        xlabel = "Day"
+    else:
+        plot_df = df.copy()
+        plot_df["Plot Group"] = plot_df["Week Label"]
+        group_col = "Week Due"
+        label_col = "Plot Group" 
+        xlabel = "Week Ending"   
+
     # render graph
-    weekly = df.groupby("Week Due")["Price"].sum().sort_index().reset_index()
-    weekly["Week Label"] = weekly["Week Due"].dt.strftime("%d %b")
+    weekly = plot_df.groupby(group_col)["Price"].sum().sort_index().reset_index()
+    weekly["Week Label"] = weekly[group_col].apply(
+        lambda x: x.strftime("%d %b") if hasattr(x, "strftime") else x
+    )
     weekly["colour"] = "green"
     weekly.loc[weekly["Price"] >= close_call, "colour"] = "orange"
     weekly.loc[weekly["Price"] > capacity, "colour"] = "red"
@@ -96,7 +115,7 @@ if raw_data:
         ),
 
         xaxis=dict(
-            title="Week Ending",
+            title=xlabel,
             showgrid=False
         ),
 
