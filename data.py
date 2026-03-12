@@ -28,15 +28,7 @@ def load_data_Bmena_local():
     sheet = wb["Schedule"]
     lookup_table = sheet.tables["Table1"]
     data = sheet[lookup_table.ref]
-    rows_list=[]
-
-    for row in data:
-        cols=[]
-        for col in row:
-            cols.append(col.value)
-        rows_list.append(cols)
-
-    df = pd.DataFrame(data=rows_list[1:], index=None, columns=rows_list[0])
+    df = table_to_df(data)
 
     return df
 
@@ -46,15 +38,7 @@ def load_data_ncr_local():
     sheet = wb["1 - Non-Conformance Log"]
     lookup_table = sheet.tables["Table1"]
     data = sheet[lookup_table.ref]
-    rows_list=[]
-
-    for row in data:
-        cols=[]
-        for col in row:
-            cols.append(col.value)
-        rows_list.append(cols)
-
-    df = pd.DataFrame(data=rows_list[1:], index=None, columns=rows_list[0])
+    df = table_to_df(data)
 
     # fix dates
     df["Date"] = pd.to_datetime(
@@ -168,15 +152,7 @@ def load_data_ncr_sp():
     sheet = wb["1 - Non-Conformance Log"]
     lookup_table = sheet.tables["Table1"]
     data = sheet[lookup_table.ref]
-    rows_list=[]
-
-    for row in data:
-        cols=[]
-        for col in row:
-            cols.append(col.value)
-        rows_list.append(cols)
-
-    df = pd.DataFrame(data=rows_list[1:], index=None, columns=rows_list[0])
+    df = table_to_df(data)
 
     # fix dates
     df["Date"] = pd.to_datetime(
@@ -187,6 +163,19 @@ def load_data_ncr_sp():
 
     return df
 
+def table_to_df(data):
+    rows_list=[]
+
+    for row in data:
+        cols=[]
+        for col in row:
+            cols.append(col.value)
+        rows_list.append(cols)
+
+    df = pd.DataFrame(data=rows_list[1:], index=None, columns=rows_list[0])
+    return df
+
+@st.cache_data(show_spinner=True)
 def load_so_sp():
     bytes_io = download_excel_from_sharepoint(
         site_name="JMSEngineeringTeam",
@@ -225,21 +214,6 @@ def load_css(file_name):
     with open(file_name) as f:
         st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
 
-
-def split_by_urgency(df):
-    today = pd.Timestamp.today().normalize()
-    df = df.sort_values(by="Earliest Process Date", ascending=True).reset_index(drop=True)
-
-    df["Week"] = df["Earliest Process Date"].dt.to_period("W")
-    current_week = today.to_period("W")
-
-    late_df = df[df["Earliest Process Date"] < today]
-    week_df = df[
-        (df["Week"] == current_week) &
-        (df["Earliest Process Date"] >= today)         
-    ]
-    future_df = df[df["Week"] > current_week]
-    return late_df, week_df, future_df
 
 def apply_filters(df, late_select, incomplete_only, selected_customers, selected_machines, bundle_search, folding_required):
     filtered_df = df.copy()
@@ -333,17 +307,6 @@ def bmena_finishing_filters(df):
     filtered_df = filtered_df[filtered_df["Comments"].isna()]
 
     return filtered_df
-# This is hardcoded for now but could change to be read from somewhere
-# if needed and would be changing often
-def capacity_hours(section_name):
-    if section_name == "Tube Cutting":
-        return 28
-    elif section_name == "Flat Cutting":
-        return 152
-    elif section_name == "Folding":
-        return 190
-    else:
-        return 0
     
 def parse_paint_data(raw_data):
     try: 

@@ -71,33 +71,3 @@ st.markdown("Note: It will take a few minutes after changes are made on sharepoi
 debug = st.toggle("View Debug Data?", value=False)
 if debug:
     render_debug_data(df, date_filter)
-
-
-
-# NOTES
-# recorded by
-
-# Customer NCR nos - n/a means none, blank means internal
-# currently n/a switch to "No Official NCR"
-# start logging internal ones as "Internal"
-
-# standardised by description
-
-# add columns for quantity, part number, Assembly as well? - ask eric
-
-# multiple ways to be complete
-# either by sending it back or by the corrective action being implemented
-# report done
-# show which ones are outstanding and number of outstanding by each type
-
-# for getting percentages - relate one defect to one sales order - if one part of a sales order is defect the whole thing
-# percentage is % of Sales orders present in NCR log / total sales orders sent out - in a given time frame
-
-# total internal ncrs is just a number
-
-
-# PLAN for this
-# clean data
-# present basic info
-# read data from statii
-# use that as comparison to create percentage charts and graphs and more advanced details.

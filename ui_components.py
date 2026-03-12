@@ -170,9 +170,7 @@ def render_capacity_titles():
     col2.markdown("## FLAT CUTTING")
     col3.markdown("## FOLDING")
 
-def render_bar_chart(df, column):
-    melted = bar_chart_hours_by_date(df)
-
+def render_bar_chart(melted, column):
     fig = px.bar(
         melted,
         x="Display Date",
@@ -211,8 +209,7 @@ def render_bar_chart(df, column):
 
     column.plotly_chart(fig, use_container_width=True)
 
-def render_line_chart(df, column):
-    melted = bar_chart_hours_by_date(df)
+def render_line_chart(melted, column):
     daily_totals = sum_hours_by_date(melted)
     
     # Create month selector (sorted chronologically)

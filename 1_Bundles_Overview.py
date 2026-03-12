@@ -45,8 +45,9 @@ render_cards(future_df, col3)
 render_side_panel(filtered_df)
 
 # bar chart of hours due by day
-render_bar_chart(filtered_df, col4)
-render_line_chart(filtered_df, col4)
+melted = bar_chart_hours_by_date(df)
+render_bar_chart(melted, col4)
+render_line_chart(melted, col4)
 
 # progress bar of complete hours
 render_progress_bar(filtered_df, col4)

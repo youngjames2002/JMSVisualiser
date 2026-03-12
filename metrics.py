@@ -206,3 +206,30 @@ def calculate_paint_overflow(weekly, capacity, new_job_value):
 
 
     return next_week_available
+
+# This is hardcoded for now but could change to be read from somewhere
+# if needed and would be changing often
+def capacity_hours(section_name):
+    if section_name == "Tube Cutting":
+        return 28
+    elif section_name == "Flat Cutting":
+        return 152
+    elif section_name == "Folding":
+        return 190
+    else:
+        return 0
+    
+def split_by_urgency(df):
+    today = pd.Timestamp.today().normalize()
+    df = df.sort_values(by="Earliest Process Date", ascending=True).reset_index(drop=True)
+
+    df["Week"] = df["Earliest Process Date"].dt.to_period("W")
+    current_week = today.to_period("W")
+
+    late_df = df[df["Earliest Process Date"] < today]
+    week_df = df[
+        (df["Week"] == current_week) &
+        (df["Earliest Process Date"] >= today)         
+    ]
+    future_df = df[df["Week"] > current_week]
+    return late_df, week_df, future_df
