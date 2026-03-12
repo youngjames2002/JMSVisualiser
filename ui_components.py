@@ -532,3 +532,83 @@ def render_bmena_finishing_cards(df):
 def render_logo(col):
     logo = Image.open("assets/logo.jpg")
     col.image(logo, width=500)
+
+
+def render_paint_chart(weekly, xlabel, capacity):
+    fig = go.Figure()
+
+    fig.add_trace(go.Bar(
+        x=weekly["Week Label"],
+        y=weekly["Price"],
+        marker=dict(
+            color=weekly["colour"],
+            line=dict(width=0)
+        ),
+        name="Paint Capacity Over Time",
+        text=weekly["Price"],
+        texttemplate="£%{text:,.0f}",
+        textposition="outside"
+    ))
+
+    fig.add_hline(
+        y=capacity,
+        line=dict(color="red", width=4, dash="dash"),
+        annotation_text=f"<b>Capacity £{capacity:,.0f}</b>",
+        annotation_position="top right"
+    )
+
+    fig.update_layout(
+        height=500,
+        margin=dict(l=40, r=40, t=30, b=40),
+        plot_bgcolor="rgba(0,0,0,0)",
+        paper_bgcolor="rgba(0,0,0,0)",
+
+        yaxis=dict(
+            title="Paint Value (£)",
+            gridcolor="rgba(0,0,0,0.05)",
+            zeroline=False
+        ),
+
+        xaxis=dict(
+            title=xlabel,
+            showgrid=False
+        ),
+
+        showlegend=False,
+
+        font=dict(
+            family="Segoe UI, sans-serif",
+            size=13,
+            color="#1a1a1a"
+        )
+    )
+
+    st.plotly_chart(fig, use_container_width=True)
+
+def render_paint_next_week(weekly, capacity):
+    st.markdown("## Next Available Week")
+    new_job_value = st.number_input(
+        "Enter Paint Value (£)",
+        min_value=0,
+        max_value=capacity,
+        step=500,
+        value=500
+    )
+    next_week_available =  calculate_paint_overflow(weekly, capacity, new_job_value)
+
+    if next_week_available:
+        st.success(f"Next Available Week Ending: {next_week_available.strftime('%d %b %Y')}")
+
+def render_paint_table(weekly, df):
+    st.markdown("## View Lines by Week")
+    weeks = sorted(weekly["Week Due"].unique())
+    week_labels = {w: pd.to_datetime(w).strftime("%d %b") for w in weeks}
+    selected_weeks = st.multiselect(
+        "Filter By Week Due",
+        options=weeks,
+        default=weeks[0],
+        format_func=lambda x: week_labels[x],
+        key="week_filter"
+    )
+    df_ts_week = df[df["Week Due"].isin(selected_weeks)]
+    st.dataframe(df_ts_week.drop(columns=df_ts_week.columns[-2]))

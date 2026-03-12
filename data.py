@@ -6,6 +6,7 @@ import io
 from io import BytesIO
 import msal
 import requests
+from io import StringIO
 
 def load_data_local():
     ## CHANGE THIS ON DIFFERENT MACHINES
@@ -344,5 +345,34 @@ def capacity_hours(section_name):
     else:
         return 0
     
+def parse_paint_data(raw_data):
+    try: 
+        df = pd.read_csv(
+            StringIO(raw_data), sep="\t", engine="python", quotechar='"', skip_blank_lines=True
+        )
+    except Exception as e:
+        st.error(f"Cannot read data - ensure data is input from statii correctly - {e}")
+        st.stop()
 
+    return df
+
+def clean_paint_data(df):
+    # filter to remove customers who dont get painted
+    df = df[~df["Customer"].str.contains("Bamford|Wright|Cunningham", case=False, na=False)]
+    # filter for specifications that are paint
+    df = df[df["Specification"].str.contains(r"\bRAL\b|\bprime\b|\bpaint\b", case=False, na=False)]
+
+    # add week column and sort by that
+    df["Date Promised"] = pd.to_datetime(
+        df["Date Promised"], dayfirst=True, errors="coerce"
+    )
+    df = df.dropna(subset=["Date Promised"])
+    df["Date Promised"] = df["Date Promised"] - pd.Timedelta(days=2)   # paint date is 2 days before so date
+    df["Week Due"] = df["Date Promised"].dt.to_period("W-FRI").apply(lambda r: r.end_time)
+    current_week = pd.Timestamp.today().to_period("W-FRI").end_time
+    df = df[df["Week Due"] >= current_week]
+    df["Week Label"] = df["Week Due"].dt.strftime("%d %b")
+    df = df.sort_values("Week Due", ascending=True)
+
+    return df
     

@@ -151,3 +151,58 @@ def urgency_colour(completed, due_date):
         return "#90EE90"  # light green → next week
     else:
         return "#006400"  # dark green → future
+    
+def build_paint_plot_data(day_week_toggle, df):
+    if day_week_toggle:
+        next_month = pd.Timestamp.today() + pd.Timedelta(days=30)
+        plot_df = df[df["Date Promised"] <= next_month].copy()
+        plot_df["Plot Group"] = plot_df["Date Promised"].dt.strftime("%d %b")
+        group_col = "Date Promised"
+    else:
+        plot_df = df.copy()
+        plot_df["Plot Group"] = plot_df["Week Label"]
+        group_col = "Week Due"
+
+    # render graph
+    weekly = plot_df.groupby(group_col)["Price"].sum().sort_index().reset_index()
+    weekly["Week Label"] = weekly[group_col].apply(
+        lambda x: x.strftime("%d %b") if hasattr(x, "strftime") else x
+    )
+    weekly["colour"] = "green"
+
+    return weekly
+
+def calculate_paint_overflow(weekly, capacity, new_job_value):
+    schedule = weekly.copy()
+    overflow=0
+    schedule["Load After Overflow"]=0
+
+    for i in range(len(schedule)):
+        load=schedule.loc[i,'Price'] + overflow
+
+        if load > capacity:
+            overflow=load-capacity
+            schedule.loc[i, "Load After Overflow"] = capacity
+        else:
+            schedule.loc[i, "Load After Overflow"] = load
+            overflow=0
+
+    next_week_available = None
+    for i in range(len(schedule)):
+        if schedule.loc[i, "Load After Overflow"] + new_job_value <= capacity:
+            next_week_available = schedule.loc[i, "Week Due"]
+            break
+    if next_week_available is None:
+        # start from last known week
+        future_week = schedule["Week Due"].iloc[-1]
+        overflow_load = overflow  # leftover from last week
+
+        while True:
+            future_week += pd.Timedelta(days=7)
+            if overflow_load + new_job_value <= capacity:
+                next_week_available = future_week
+                break
+            overflow_load = max(0, overflow_load - capacity)
+
+
+    return next_week_available
