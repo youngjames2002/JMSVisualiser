@@ -39,9 +39,9 @@ with at_a_glance_container:
 # render cards section
 render_cards_titles()
 col1, col2, col3, col4 = st.columns(4)
-render_cards(late_df, col1)
-render_cards(week_df, col2)
-render_cards(future_df, col3)
+render_cards(late_df, col1, key_prefix="late")
+render_cards(week_df, col2, key_prefix="week")
+render_cards(future_df, col3, key_prefix="future")
 render_side_panel(filtered_df)
 
 # bar chart of hours due by day
