@@ -25,25 +25,8 @@ def render_hours(flat_hours, tube_hours, folding_hours):
     </div>
     """, unsafe_allow_html=True)
 
-def render_cards(dataframe, column, key_prefix=""):
-    # Build unique key map before rendering
-    name_counts = {}
-    unique_keys = []
-
+def render_cards(dataframe, column):
     for _, row in dataframe.iterrows():
-        name = row["Bundle/Job"]
-        name_counts[name] = name_counts.get(name, 0) + 1
-
-    seen_counts = {}
-    for _, row in dataframe.iterrows():
-        name = row["Bundle/Job"]
-        if name_counts[name] > 1:
-            seen_counts[name] = seen_counts.get(name, 0) + 1
-            unique_keys.append(f"{name} ({seen_counts[name]})")
-        else:
-            unique_keys.append(name)
-
-    for (_, row), unique_key in zip(dataframe.iterrows(), unique_keys):
 
         bundle_name = row["Bundle/Job"]
         due_raw = row["Earliest Process Date"]
@@ -56,11 +39,14 @@ def render_cards(dataframe, column, key_prefix=""):
         else:
             due_date = "No date"
 
-        band_color = urgency_colour(bundle_status, due_raw)
+        band_color = urgency_colour(bundle_status,due_raw)
 
-        is_selected = (st.session_state.selected_bundle == unique_key)
+        # checks if details side panel is showing
+        is_selected = (st.session_state.selected_bundle == bundle_name)
         card_class = "bundle-card selected" if is_selected else "bundle-card"
 
+        # Card container
+        #if row["Completed?"] != "Yes":
         column.markdown(f"""
                 <div class="{card_class}" style="border-left:8px solid {band_color};">
                     <div class="bundle-title">{bundle_name}</div>
@@ -71,14 +57,17 @@ def render_cards(dataframe, column, key_prefix=""):
                 </div>
             """, unsafe_allow_html=True)
 
+            # Click button
         button_label = "Close Details" if is_selected else "View Details"
 
-        if column.button(button_label, key=f"btn_{key_prefix}_{unique_key}"):
+        if column.button(button_label, key=f"btn_{bundle_name}"):
             if is_selected:
+                    # If already open → close it
                 st.session_state.selected_bundle = None
             else:
-                st.session_state.selected_bundle = unique_key
-            st.rerun()
+                    # Otherwise open it
+                st.session_state.selected_bundle = bundle_name
+            st.rerun()       
 
 def render_at_a_glance(df,late_df, week_df, future_df):
     total_folding, flat_cutting, tube_cutting = calculate_totals(df)
