@@ -33,6 +33,7 @@ def render_cards(dataframe, column):
         bundle_type = row["Type"]
         bundle_status = row["Completed?"]
         fold_status = row["Folding Required?"]
+        bundle_id = row["bundle-ID"]
 
         if pd.notnull(due_raw):
             due_date = due_raw.strftime("%d/%m/%Y")
@@ -60,7 +61,7 @@ def render_cards(dataframe, column):
             # Click button
         button_label = "Close Details" if is_selected else "View Details"
 
-        if column.button(button_label, key=f"btn_{bundle_name}"):
+        if column.button(button_label, key=f"btn_{bundle_id}"):
             if is_selected:
                     # If already open → close it
                 st.session_state.selected_bundle = None

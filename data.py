@@ -246,7 +246,7 @@ def apply_filters(df, late_select, incomplete_only, selected_customers, selected
 
     # Customer filter
     filtered_df = filtered_df[
-        filtered_df["Customer"].isin(selected_customers)
+        filtered_df["Customer Grouped"].isin(selected_customers)
     ]
 
     # Machine filter
