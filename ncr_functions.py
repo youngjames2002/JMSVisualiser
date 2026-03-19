@@ -45,6 +45,9 @@ def clean_ncr_data(df):
 
     # sort companies being reported differently
     df = apply_company_grouping(df)
+
+    # Create week column
+    df["Week"] = df["Date"].dt.to_period("W").dt.start_time
     return df
 
 def render_debug_data(df, date_filter):
@@ -170,8 +173,11 @@ def render_sales_order_impact(df, so_df, date_filter, col):
 
     # weekly comparison
     today = pd.Timestamp.today()
-    this_week = len(df[df["Date"] >= today - pd.Timedelta(days=7)])
-    last_week = len(df[(df["Date"] >= today - pd.Timedelta(days=14)) & (df["Date"] < today - pd.Timedelta(days=7))])
+    this_week_start = today - pd.Timedelta(days=today.weekday())  # floor to Monday
+    last_week_start = this_week_start - pd.Timedelta(weeks=1)
+
+    this_week = len(df[df["Week"] == this_week_start.normalize()])
+    last_week = len(df[df["Week"] == last_week_start.normalize()])
     delta = this_week - last_week
 
     col.metric(
@@ -186,7 +192,6 @@ def calculate_weekly_impact(df, so_df):
     so_df["Date Required"] = pd.to_datetime(so_df["Date Required"])
 
     # Create week column
-    df["Week"] = df["Date"].dt.to_period("W").dt.start_time
     so_df["Week"] = so_df["Date Required"].dt.to_period("W").dt.start_time
 
     # Weekly total SOs
