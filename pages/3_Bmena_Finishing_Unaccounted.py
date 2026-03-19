@@ -4,6 +4,9 @@ from ui_components import *
 
 st.set_page_config(layout="wide")
 
+from login import require_auth
+require_auth()
+
 #load css
 load_css('stylesheet.css')
 

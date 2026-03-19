@@ -53,10 +53,10 @@ def load_data_ncr_local():
 def download_excel_from_sharepoint(site_name: str, file_path:str) -> BytesIO:
     # download from sharepoint and return bytesIO object
 
-    TENANT_ID = st.secrets["TENANT_ID"]
-    CLIENT_ID = st.secrets["CLIENT_ID"]
-    CLIENT_SECRET = st.secrets["CLIENT_SECRET"]
-    SHAREPOINT_SITE = st.secrets["SHAREPOINT_SITE"]
+    TENANT_ID = st.secrets["sharepoint"]["TENANT_ID"]
+    CLIENT_ID = st.secrets["sharepoint"]["CLIENT_ID"]
+    CLIENT_SECRET = st.secrets["sharepoint"]["CLIENT_SECRET"]
+    SHAREPOINT_SITE = st.secrets["sharepoint"]["SHAREPOINT_SITE"]
 
     AUTHORITY = f"https://login.microsoftonline.com/{TENANT_ID}"
     SCOPE = ["https://graph.microsoft.com/.default"]

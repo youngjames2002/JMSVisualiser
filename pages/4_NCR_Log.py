@@ -6,7 +6,8 @@ from ncr_functions import *
 import plotly.io as pio
 pio.templates.default = "simple_white"
 
-st.set_page_config(layout="wide")
+from login import require_auth
+require_auth()
 
 #load css
 load_css('stylesheet.css')
