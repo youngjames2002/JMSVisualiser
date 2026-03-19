@@ -4,3 +4,4 @@ plotly
 openpyxl
 msal
 requests
+streamlit-authenticator
