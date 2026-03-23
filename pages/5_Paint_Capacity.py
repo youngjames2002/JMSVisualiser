@@ -18,7 +18,7 @@ CLOSE_CALL = 30000
 
 st.markdown("""
 Go to Sales Order Lines in Statii and export the report **'Paint Capacity'**  
-It should show the columns Line No, Customer, Specification, Price and Date Promised  
+It should show the columns Line No, Customer, Specification, Price and Date Promised. Ensure that ALL rows are shown and not limited to 100.  
 Download that and then click 'open'. This should open a spreadsheet. Select All and copy, then paste that into the box below
 """)
 raw_data = st.text_area("Paste Statii Dump here")
