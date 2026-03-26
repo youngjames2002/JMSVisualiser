@@ -156,6 +156,7 @@ def build_paint_plot_data(day_week_toggle, df):
     if day_week_toggle:
         next_month = pd.Timestamp.today() + pd.Timedelta(days=30)
         plot_df = df[df["Date Promised"] <= next_month].copy()
+        plot_df["Date Promised"] = plot_df["Date Promised"] - pd.Timedelta(days=2)
         plot_df["Plot Group"] = plot_df["Date Promised"].dt.strftime("%d %b")
         group_col = "Date Promised"
     else:
