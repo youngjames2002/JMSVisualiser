@@ -147,7 +147,7 @@ def render_sales_order_impact(df, so_df, date_filter, col):
     # have to do a dump out and save to NCR Log/ALL SALES ORDERS.csv on sharepoint
     # filter so_df by date filter
     date_filter = pd.to_datetime(date_filter)
-    so_df["Date Required"] = pd.to_datetime(so_df["Date Required"])
+    so_df["Date Required"] = pd.to_datetime(so_df["Date Required"], format="%d/%m/%y")
     so_df = so_df[so_df["Date Required"] >= date_filter]
     # st.dataframe(so_df) # debug
 
