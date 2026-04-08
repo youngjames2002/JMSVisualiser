@@ -176,7 +176,7 @@ def build_paint_plot_data(day_week_toggle, df):
 def calculate_paint_overflow(weekly, capacity, new_job_value):
     schedule = weekly.copy()
     overflow=0
-    schedule["Load After Overflow"]=0
+    schedule["Load After Overflow"]=0.0
 
     for i in range(len(schedule)):
         load=schedule.loc[i,'Price'] + overflow
