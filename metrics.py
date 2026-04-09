@@ -234,3 +234,115 @@ def split_by_urgency(df):
     ]
     future_df = df[df["Week"] > current_week]
     return late_df, week_df, future_df
+
+def build_weld_kpis(df):
+    df = df.copy()
+
+    # Fix column names (optional but safer)
+    df.columns = df.columns.str.strip()
+
+    # Convert types
+    df["Week Ending"] = pd.to_datetime(df["Week Ending"], dayfirst=True, errors="coerce")
+    df["Hours Plan"] = pd.to_numeric(df["Hours Plan"], errors="coerce").fillna(0)
+
+    # Get this Friday + next Friday
+    today = pd.Timestamp.today().normalize()
+    this_week = (today + pd.offsets.Week(weekday=4)).normalize()
+    next_week = this_week + pd.Timedelta(days=7)
+
+    # Aggregate
+    kpi_df = (
+        df[df["Week Ending"].isin([this_week, next_week])]
+        .groupby(["Site", "Week Ending"])["Hours Plan"]
+        .sum()
+        .unstack(fill_value=0)
+        .rename(columns={
+            this_week: "This Week Hours",
+            next_week: "Next Week Hours"
+        })
+        .reset_index()
+    )
+
+    # Ensure both columns exist (in case one week missing)
+    for col in ["This Week Hours", "Next Week Hours"]:
+        if col not in kpi_df:
+            kpi_df[col] = 0
+
+    kpi_df["This Week Hours"] = kpi_df["This Week Hours"].apply(format_hours)
+    kpi_df["Next Week Hours"] = kpi_df["Next Week Hours"].apply(format_hours)
+
+    return kpi_df
+
+def format_hours(hours):
+    h = int(hours)
+    m = int(round((hours - h) * 60))
+    return f"{h}h {m}m"
+
+def build_weld_chart_data(df, site):
+    df = df.copy()
+
+    # filter to only appropriate site
+    df = df[df["Site"] == site]
+
+    # Clean columns
+    df.columns = df.columns.str.strip()
+
+    # Convert types
+    df["Week Ending"] = pd.to_datetime(df["Week Ending"], dayfirst=True, errors="coerce")
+    df["Hours Plan"] = pd.to_numeric(df["Hours Plan"], errors="coerce").fillna(0)
+
+    # Aggregate to weekly level
+    weekly = (
+        df.groupby("Week Ending")["Hours Plan"]
+        .sum()
+        .reset_index()
+        .sort_values("Week Ending")
+    )
+
+    # Format label for display
+    weekly["Week Label"] = weekly["Week Ending"].dt.strftime("%d %b")
+
+    return weekly
+
+def weld_table_filters(df):
+    # filter by week ending
+    weeks_dt = sorted(
+        pd.to_datetime(df["Week Ending"], dayfirst=True).dropna().unique()
+    )
+
+    weeks = [d.strftime("%d/%m/%Y") for d in weeks_dt]
+
+    # Get this week's Friday
+    today = pd.Timestamp.today().normalize()
+    this_week = (today + pd.offsets.Week(weekday=4)).strftime("%d/%m/%Y")
+
+    # Set default (only if it exists in list)
+    default_week = [this_week] if this_week in weeks else []
+
+    selected_weeks = st.multiselect(
+        "Filter By Week(s)",
+        options=weeks,
+        default=default_week,
+        key="week_filter"
+    )
+
+    filtered_df = df[df["Week Ending"].isin(selected_weeks)]
+    
+    # strip back some unesscary fields and reorder
+    filtered_df["Date Requested"] = pd.to_datetime(filtered_df["Date Requested"], errors="coerce").dt.strftime("%d/%m/%y")
+    filtered_df = filtered_df.drop(columns=["Operation", "Customer Grouped"], errors="ignore")
+    filtered_df = filtered_df[
+        [
+            "S.O. No.",
+            "Number",
+            "Customer",
+            "Hours Plan",
+            "Time Planned",
+            "Date Requested",
+            "Week Ending",
+            "Site"
+        ]
+    ]
+    filtered_df = filtered_df.sort_values("Hours Plan", ascending=False)
+    
+    return filtered_df

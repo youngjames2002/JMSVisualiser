@@ -111,7 +111,6 @@ def load_data_sp():
 
     df = pd.read_excel(bytes_io)
 
-    # Example processing (replace with your real functions)
     df["Earliest Process Date"] = pd.to_datetime(
         df["Earliest Process Date"],
         dayfirst=True,
@@ -161,6 +160,25 @@ def load_data_ncr_sp():
         errors="coerce"
     )
 
+    return df
+
+def load_data_weld_sp():
+    bytes_io = download_excel_from_sharepoint(
+        site_name="JMSEngineeringTeam",
+        file_path="JMS Engineering Team SharePoint/Admin/Welding Schedule Teams Tool.xlsx"
+    )
+    if bytes_io is None:
+        return pd.DataFrame()  # return empty DataFrame if download failed
+
+    df = pd.read_excel(bytes_io)
+
+    df["Date Requested"] = pd.to_datetime(
+        df["Date Requested"],
+        dayfirst=True,
+        errors="coerce"
+    )
+    df.columns = df.columns.str.strip()
+    df = apply_company_grouping(df)
     return df
 
 def table_to_df(data):
@@ -339,3 +357,14 @@ def clean_paint_data(df):
 
     return df
     
+def clean_weld_data(df):
+    clean_df = df.copy()
+    #strip columns we dont use
+    clean_df.drop(['PlannerDueDate', 'Task Description', 'PlannerTaskID', 'PlannerCreated', 'CreatedOn'], axis=1, inplace=True)
+    #add site logic - bamford = bmena, other = kilrea
+    clean_df["Site"] = clean_df["Customer Grouped"].str.contains("BAMFORD", case=False, na=False).map({True: "Ballymena", False: "Kilrea"})
+    #add week ending logic
+    clean_df["Week Ending"] = (
+        pd.to_datetime(clean_df["Date Requested"]) + pd.offsets.Week(weekday=4)
+    ).dt.strftime("%d/%m/%Y")
+    return clean_df

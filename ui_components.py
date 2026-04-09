@@ -610,3 +610,88 @@ def render_paint_table(weekly, df):
     )
     df_ts_week = df[df["Week Due"].isin(selected_weeks)]
     st.dataframe(df_ts_week.drop(columns=df_ts_week.columns[-2]))
+
+def render_weld_chart(plot_df):
+
+    fig = go.Figure()
+
+    fig.add_trace(go.Bar(
+        x=plot_df["Week Label"],
+        y=plot_df["Hours Plan"],
+        text=plot_df["Hours Plan"].round(0),
+        textposition="outside",
+        hovertemplate="<b>%{x}</b><br>%{y} hours<extra></extra>",
+        marker=dict(
+            line=dict(width=0)
+        )
+    ))
+
+    # # Capacity line option if i get that info
+    # capacity = 200  # <-- change this
+    # fig.add_hline(
+    #     y=capacity,
+    #     line=dict(color="red", width=3, dash="dash"),
+    #     annotation_text=f"Capacity ({capacity}h)",
+    #     annotation_position="top right"
+    # )
+
+    fig.update_layout(
+        height=500,
+        margin=dict(l=40, r=40, t=40, b=40),
+
+        plot_bgcolor="rgba(0,0,0,0)",
+        paper_bgcolor="rgba(0,0,0,0)",
+
+        yaxis=dict(
+            title="Hours",
+            gridcolor="rgba(0,0,0,0.05)",
+            zeroline=False
+        ),
+
+        xaxis=dict(
+            title="Week Ending",
+            showgrid=False
+        ),
+
+        showlegend=False,
+
+        font=dict(
+            family="Segoe UI, sans-serif",
+            size=13,
+            color="#1a1a1a"
+        )
+    )
+
+    st.plotly_chart(fig, use_container_width=True)
+
+def render_weld_kpi(kpi_df, site, week, col):
+    # Get row for site
+    row = kpi_df[kpi_df["Site"] == site]
+
+    if row.empty:
+        value = "0h"
+    else:
+        if week == "this":
+            value = row["This Week Hours"].iloc[0]
+            title = "Total Hours to be Welded This Week"
+        elif week == "next":
+            value = row["Next Week Hours"].iloc[0]
+            title = "Total Hours to be Welded Next Week"
+        else:
+            st.error("error wrong data")
+            return
+
+    col.markdown(f"""
+    <div class="app-card black">
+        <h3 style="margin:0;">{title}</h3>
+        <h1 style="margin:0;">{value}</h1>
+    </div>
+    """, unsafe_allow_html=True)
+
+def render_weld_table(df, site):
+    # filter by site first
+    df = df[df["Site"] == site]
+
+    filtered_df = weld_table_filters(df)
+    st.dataframe(filtered_df)
+    
