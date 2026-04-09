@@ -613,6 +613,16 @@ def render_paint_table(weekly, df):
 
 def render_weld_chart(plot_df):
 
+    # highlight ts week
+    # Get this week's label
+    today = pd.Timestamp.today().normalize()
+    this_week = (today + pd.offsets.Week(weekday=4)).strftime("%d %b")
+
+    # Create colour column
+    plot_df["colour"] = plot_df["Week Label"].apply(
+        lambda x: "#FFC300" if x == this_week else "#2E86C1"
+    )
+
     fig = go.Figure()
 
     fig.add_trace(go.Bar(
@@ -622,6 +632,7 @@ def render_weld_chart(plot_df):
         textposition="outside",
         hovertemplate="<b>%{x}</b><br>%{y} hours<extra></extra>",
         marker=dict(
+            color=plot_df["colour"],
             line=dict(width=0)
         )
     ))
