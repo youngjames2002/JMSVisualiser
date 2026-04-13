@@ -13,7 +13,7 @@ tcol1, tcol2 = st.columns([1, 4])
 tcol2.title("Saw Schedule")
 render_logo(tcol1)
 
-df = load_data_weld_sp()
+df = load_data_saw_sp()
 df = remove_completed_jobs(df, "saw")
 
 clean_df = clean_weld_data(df)
