@@ -14,6 +14,7 @@ tcol2.title("Weld Schedule")
 render_logo(tcol1)
 
 df = load_data_weld_sp()
+df = remove_completed_jobs(df, "weld")
 
 clean_df = clean_weld_data(df)
 kpi_df = build_weld_kpis(clean_df)

@@ -120,6 +120,30 @@ def load_data_sp():
     return df
 
 @st.cache_data(show_spinner=True)
+def load_data_completed_jobs(resource):
+    bytes_io = download_excel_from_sharepoint(
+        site_name="JMSEngineeringTeam",
+        file_path="JMS Engineering Team SharePoint/Admin/completed_jobs_weld_saw_machining.xlsx"
+    )
+    if bytes_io is None:
+        return pd.DataFrame()
+
+    sheet_map = {
+        "weld": "weldTable",
+        "saw": "sawTable",
+        "machine": "machineTable"
+    }
+
+    sheet_name = sheet_map.get(resource)
+    if sheet_name is None:
+        st.error(f"Unknown resource: '{resource}'. Expected one of: {list(sheet_map.keys())}")
+        return pd.DataFrame()
+
+    df = pd.read_excel(bytes_io, sheet_name=sheet_name)
+
+    return df
+    
+@st.cache_data(show_spinner=True)
 def load_data_Bmena_sp():
     bytes_io = download_excel_from_sharepoint(
         site_name="JMSEngineeringTeam",
@@ -162,6 +186,7 @@ def load_data_ncr_sp():
 
     return df
 
+@st.cache_data(show_spinner=True)
 def load_data_weld_sp():
     bytes_io = download_excel_from_sharepoint(
         site_name="JMSEngineeringTeam",
@@ -368,3 +393,14 @@ def clean_weld_data(df):
         pd.to_datetime(clean_df["Date Requested"]) + pd.offsets.Week(weekday=4)
     ).dt.strftime("%d/%m/%Y")
     return clean_df
+
+def remove_completed_jobs(df, resource):
+    completed_df = load_data_completed_jobs(resource)
+    
+    if completed_df.empty:
+        return df
+    
+    completed_job_numbers = completed_df["Number"].dropna().unique()
+    df = df[~df["Number"].isin(completed_job_numbers)]
+    
+    return df
