@@ -187,24 +187,69 @@ def render_sales_order_impact(df, so_df, date_filter, col):
         delta_color="inverse"
     )
 
-def calculate_weekly_impact(df, so_df):
-    df["Date"] = pd.to_datetime(df["Date"])
-    so_df["Date Required"] = pd.to_datetime(so_df["Date Required"])
+import re
 
-    # Create week column
-    so_df["Week"] = so_df["Date Required"].dt.to_period("W").dt.start_time
+def normalise_so(raw):
+    """Strip 'SO-0' prefix down to the numeric part, zero-padded to 6 digits."""
+    raw = str(raw).strip().upper()
+    raw = re.sub(r'^SO-0*', '', raw)  # remove SO-0 prefix if present
+    raw = raw.zfill(6)                # zero-pad to 6 digits
+    return raw
+
+def split_multi_so(raw):
+    """Split cells containing multiple SO numbers (e.g. '23665 & 23541') into a list."""
+    parts = re.split(r'[&+,;/]+', str(raw))
+    return [p.strip() for p in parts if p.strip()]
+
+def calculate_weekly_impact(df, so_df):
+    df = df.copy()
+    so_df = so_df.copy()
+
+    df["Date"] = pd.to_datetime(df["Date"])
+    so_df["Date Required"] = pd.to_datetime(so_df["Date Required"], format="mixed", dayfirst=True)
+
+    # Normalise SO key in so_df
+    so_df["SO_key"] = so_df["S.O. No."].astype(str).apply(normalise_so)
+
+    # Deduplicate - one row per SO using earliest Date Required
+    so_deduped = (
+        so_df.sort_values("Date Required")
+        .drop_duplicates(subset="SO_key", keep="first")
+    )
+    so_deduped["Week"] = so_deduped["Date Required"].dt.to_period("W").dt.start_time
 
     # Weekly total SOs
-    weekly_so = so_df.groupby("Week")["S.O. No."].nunique().reset_index(name="Total SOs")
+    weekly_so = so_deduped.groupby("Week")["SO_key"].nunique().reset_index(name="Total SOs")
 
-    # Weekly affected SOs
-    affected = df[df["Original sales Order"].notna()]
-    weekly_affected = affected.groupby("Week")["Original sales Order"].nunique().reset_index(name="Affected SOs")
+    # Build lookup: SO_key -> Week
+    so_week_lookup = so_deduped.set_index("SO_key")["Week"]
 
-    # Merge
+    # Get affected NCRs
+    affected = df[
+        df["Original sales Order"].notna() &
+        ~df["Original sales Order"].astype(str).str.strip().str.upper().isin(["N/A", "NA", "NONE", "NAN", ""])
+    ].copy()
+
+    # Explode multi-SO entries into one row per SO
+    affected["SO_list"] = affected["Original sales Order"].apply(split_multi_so)
+    affected = affected.explode("SO_list")
+    affected["SO_key"] = affected["SO_list"].apply(normalise_so)
+
+    # Map week from SO lookup; fall back to NCR Date if SO not found
+    affected["Week"] = affected["SO_key"].map(so_week_lookup)
+    affected["Week"] = affected["Week"].fillna(
+        affected["Date"].dt.to_period("W").dt.start_time
+    )
+
+    # Weekly affected SOs (unique SOs per week)
+    weekly_affected = (
+        affected.groupby("Week")["SO_key"]
+        .nunique()
+        .reset_index(name="Affected SOs")
+    )
+
+    # Merge and calculate %
     weekly = weekly_so.merge(weekly_affected, on="Week", how="left").fillna(0)
-
-    # Calculate %
     weekly["Affected %"] = (weekly["Affected SOs"] / weekly["Total SOs"]) * 100
 
     return weekly
