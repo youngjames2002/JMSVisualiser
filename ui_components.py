@@ -699,10 +699,28 @@ def render_weld_kpi(kpi_df, site, week, col):
     </div>
     """, unsafe_allow_html=True)
 
+def render_saw_machine_kpi(kpi_df, week):
+    if week == "this":
+        value = kpi_df["This Week Hours"].iloc[0]
+        title = "Total Hours to be Saw Cut This Week"
+    elif week == "next":
+        value = kpi_df["Next Week Hours"].iloc[0]
+        title = "Total Hours to be Saw Cut Next Week"
+    else:
+        st.error("error wrong data")
+        return
+    
+    st.markdown(f"""
+    <div class="app-card black">
+        <h3 style="margin:0;">{title}</h3>
+        <h1 style="margin:0;">{value}</h1>
+    </div>
+    """, unsafe_allow_html=True)
+
+
 def render_weld_table(df, site):
     # filter by site first
     df = df[df["Site"] == site]
 
     filtered_df = weld_table_filters(df)
     st.dataframe(filtered_df)
-    
