@@ -699,6 +699,30 @@ def render_weld_kpi(kpi_df, site, week, col):
     </div>
     """, unsafe_allow_html=True)
 
+def render_machine_kpi(kpi_df, operation, week, col):
+    # Get row for operation
+    row = kpi_df[kpi_df["Operation"] == operation]
+
+    if row.empty:
+        value = "0h"
+    else:
+        if week == "this":
+            value = row["This Week Hours"].iloc[0]
+            title = "Total Hours to be Processed This Week"
+        elif week == "next":
+            value = row["Next Week Hours"].iloc[0]
+            title = "Total Hours to be Processed Next Week"
+        else:
+            st.error("error wrong data")
+            return
+
+    col.markdown(f"""
+    <div class="app-card black">
+        <h3 style="margin:0;">{title}</h3>
+        <h1 style="margin:0;">{value}</h1>
+    </div>
+    """, unsafe_allow_html=True)
+
 def render_saw_machine_kpi(kpi_df, week):
     if week == "this":
         value = kpi_df["This Week Hours"].iloc[0]

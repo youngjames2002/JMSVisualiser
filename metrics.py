@@ -273,6 +273,44 @@ def build_weld_kpis(df):
 
     return kpi_df
 
+def build_machine_kpis(df):
+    df = df.copy()
+
+    # Fix column names (optional but safer)
+    df.columns = df.columns.str.strip() 
+
+    # Convert types
+    df["Week Ending"] = pd.to_datetime(df["Week Ending"], dayfirst=True, errors="coerce")
+    df["Hours Plan"] = pd.to_numeric(df["Hours Plan"], errors="coerce").fillna(0)
+
+    # Get this Friday + next Friday
+    today = pd.Timestamp.today().normalize()
+    this_week = (today + pd.offsets.Week(weekday=4)).normalize()
+    next_week = this_week + pd.Timedelta(days=7)
+
+    # Aggregate
+    kpi_df = (
+        df[df["Week Ending"].isin([this_week, next_week])]
+        .groupby(["Operation", "Week Ending"])["Hours Plan"]
+        .sum()
+        .unstack(fill_value=0)
+        .rename(columns={
+            this_week: "This Week Hours",
+            next_week: "Next Week Hours"
+        })
+        .reset_index()
+    )
+
+    # Ensure both columns exist (in case one week missing)
+    for col in ["This Week Hours", "Next Week Hours"]:
+        if col not in kpi_df:
+            kpi_df[col] = 0
+
+    kpi_df["This Week Hours"] = kpi_df["This Week Hours"].apply(format_hours)
+    kpi_df["Next Week Hours"] = kpi_df["Next Week Hours"].apply(format_hours)
+
+    return kpi_df
+
 def build_saw_kpis(df):
     df = df.copy()
     df.columns = df.columns.str.strip()
@@ -329,6 +367,53 @@ def build_weld_chart_data(df, site):
     )
 
     # Format label for display
+    weekly["Week Label"] = weekly["Week Ending"].dt.strftime("%d %b")
+
+    return weekly
+
+def build_machine_chart_data(df, operation=None):
+    df = df.copy()
+
+    # Clean columns early
+    df.columns = df.columns.str.strip()
+    df["Operation"] = df["Operation"].astype(str).str.strip()
+
+    # -----------------------------
+    # Handle filtering properly
+    # -----------------------------
+    if operation is not None:
+        # If empty list → return empty df
+        if isinstance(operation, list) and len(operation) == 0:
+            return pd.DataFrame(columns=["Week Ending", "Hours Plan", "Week Label"])
+
+        # If single string → convert to list
+        if isinstance(operation, str):
+            operation = [operation]
+
+        df = df[df["Operation"].isin(operation)]
+
+    # -----------------------------
+    # Convert types
+    # -----------------------------
+    df["Week Ending"] = pd.to_datetime(df["Week Ending"], dayfirst=True, errors="coerce")
+    df["Hours Plan"] = pd.to_numeric(df["Hours Plan"], errors="coerce").fillna(0)
+
+    # -----------------------------
+    # Handle empty AFTER filter
+    # -----------------------------
+    if df.empty:
+        return pd.DataFrame(columns=["Week Ending", "Hours Plan", "Week Label"])
+
+    # -----------------------------
+    # Aggregate
+    # -----------------------------
+    weekly = (
+        df.groupby("Week Ending")["Hours Plan"]
+        .sum()
+        .reset_index()
+        .sort_values("Week Ending")
+    )
+
     weekly["Week Label"] = weekly["Week Ending"].dt.strftime("%d %b")
 
     return weekly
