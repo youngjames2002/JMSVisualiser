@@ -917,7 +917,8 @@ def render_saw_bundle_kpi(kpi_df, week):
     """, unsafe_allow_html=True)
 
 def render_weld_table(df, site):
-    filtered_df = weld_table_filters(df, site)
+    df = df[df["Site"] == site]
+    filtered_df = weld_table_filters(df)
     st.dataframe(filtered_df)
 
 def render_flat_table(df, site):

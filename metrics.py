@@ -658,8 +658,7 @@ def build_fold_chart_data(df, site):
     return weekly, y_max
     
 
-def weld_table_filters(df, site):
-    df = df[df["Site"] == site]
+def weld_table_filters(df):
     # filter by week ending
     weeks_dt = sorted(
         pd.to_datetime(df["Week Ending"], dayfirst=True).dropna().unique()
