@@ -28,6 +28,7 @@ kpi_df = build_tube_kpis(clean_df)
 
 # KPIS HERE
 st.title("Overview")
+render_saw_bundle_kpi(kpi_df, "late")
 render_saw_bundle_kpi(kpi_df, "this")
 render_saw_bundle_kpi(kpi_df, "next")
 

@@ -7,7 +7,6 @@ from io import BytesIO
 import msal
 import requests
 from io import StringIO
-from metrics import format_hours
 
 def load_data_local():
     ## CHANGE THIS ON DIFFERENT MACHINES
@@ -477,3 +476,8 @@ def remove_completed_jobs(df, resource):
     df = df[~df["Number"].isin(completed_job_numbers)]
     
     return df
+
+def format_hours(hours):
+    h = int(hours)
+    m = int(round((hours - h) * 60))
+    return f"{h}h {m}m"

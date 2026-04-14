@@ -863,6 +863,9 @@ def render_weld_kpi(kpi_df, site, week, col):
         elif week == "next":
             value = row["Next Week Hours"].iloc[0]
             title = "Total Hours to be Processed Next Week"
+        elif week == "late":
+            value = kpi_df["Late Hours"].iloc[0]
+            title = "Total Hours Late"
         else:
             st.error("error wrong data")
             return
@@ -887,6 +890,9 @@ def render_machine_kpi(kpi_df, operation, week, col):
         elif week == "next":
             value = row["Next Week Hours"].iloc[0]
             title = "Total Hours to be Processed Next Week"
+        elif week == "late":
+            value = kpi_df["Late Hours"].iloc[0]
+            title = "Total Hours Late"
         else:
             st.error("error wrong data")
             return
@@ -905,6 +911,9 @@ def render_saw_bundle_kpi(kpi_df, week):
     elif week == "next":
         value = kpi_df["Next Week Hours"].iloc[0]
         title = "Total Hours to be Processed Next Week"
+    elif week == "late":
+        value = kpi_df["Late Hours"].iloc[0]
+        title = "Total Hours Late"
     else:
         st.error("error wrong data")
         return
