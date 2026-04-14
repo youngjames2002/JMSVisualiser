@@ -7,6 +7,7 @@ from data import *
 import plotly.graph_objects as go
 import datetime
 from PIL import Image
+import numpy as np
 
 def render_hours(flat_hours, tube_hours, folding_hours):
     st.markdown(f"""
@@ -251,7 +252,6 @@ def render_line_chart(melted, column):
     column.plotly_chart(fig, use_container_width=True)  
 
 def render_filter_section(df):
-    st.markdown("## Filters")
 
     filter_col1, filter_col2, filter_col3, filter_col4, filter_col5, filter_col6 = st.columns(6)
 
@@ -583,6 +583,180 @@ def render_paint_chart(weekly, xlabel, capacity):
 
     st.plotly_chart(fig, use_container_width=True)
 
+def render_flat_chart(weekly, capacity, y_max):
+    # highlight this week
+    today = pd.Timestamp.today().normalize()
+    this_week = (today + pd.offsets.Week(weekday=4)).strftime("%d %b")
+
+    # Create colour column
+    weekly["colour"] = weekly["Week Label"].apply(
+        lambda x: "#FFC300" if x == this_week else "#2E86C1"
+    )
+
+    # capacity colouring
+    weekly["capacity_colour"] = np.select(
+        [
+            weekly["Estimated Bundle Time (Hours)"] > capacity,
+            weekly["Estimated Bundle Time (Hours)"] > capacity * 0.75
+        ],
+        [
+            "red",
+            "orange"
+        ],
+        default="green"
+    )
+
+    fig = go.Figure()
+    fig.add_trace(go.Bar(
+        x=weekly["Week Label"],
+        y=weekly["Estimated Bundle Time (Hours)"],
+        name="flat chart",
+        text=weekly["Hours"],
+        textposition="outside",
+        hovertemplate="<b>%{x}</b><br>%{y} hours<extra></extra>",
+        marker=dict(
+            color=weekly["colour"],
+            line=dict(
+            color=weekly["capacity_colour"],
+            width=3
+            )
+        )
+    ))
+
+    # add capacity line
+    fig.add_hline(
+        y=capacity,
+        line=dict(color="red", width=4, dash="dash"),
+        annotation_text=f"Capacity ({capacity})",
+        annotation_position="top right"
+    )
+
+    # add 75% capacity line
+    capacity=int(capacity*.75)
+    fig.add_hline(
+        y=capacity,
+        line=dict(color="pink", width=4, dash="dash"),
+        annotation_text=f"75% Capacity ({capacity})",
+        annotation_position="top right"
+    )
+
+    # update layout to look nice
+    fig.update_layout(
+        height=500,
+        margin=dict(l=40, r=40, t=40, b=40),
+        plot_bgcolor="rgba(0,0,0,0)",
+        paper_bgcolor="rgba(0,0,0,0)",
+
+        yaxis=dict(
+            title="Hours",
+            gridcolor="rgba(0,0,0,0.05)",
+            zeroline=False,
+            range=[0, y_max*1.1] # fixed scale
+        ),
+
+        xaxis=dict(
+            title="Week Ending",
+            showgrid=False
+        ),
+
+        showlegend=False,
+
+        font=dict(
+            family="Segoe UI, sans-serif",
+            size=13,
+            color="#1a1a1a"
+        )
+    )
+
+    st.plotly_chart(fig, use_container_width=True)
+
+def render_fold_chart(weekly, capacity, y_max):
+    # highlight this week
+    today = pd.Timestamp.today().normalize()
+    this_week = (today + pd.offsets.Week(weekday=4)).strftime("%d %b")
+
+    # Create colour column
+    weekly["colour"] = weekly["Week Label"].apply(
+        lambda x: "#FFC300" if x == this_week else "#2E86C1"
+    )
+
+    # capacity colouring
+    weekly["capacity_colour"] = np.select(
+        [
+            weekly["Estimated Fold Time (Hours)"] > capacity,
+            weekly["Estimated Fold Time (Hours)"] > capacity * 0.75
+        ],
+        [
+            "red",
+            "orange"
+        ],
+        default="green"
+    )
+
+    fig = go.Figure()
+    fig.add_trace(go.Bar(
+        x=weekly["Week Label"],
+        y=weekly["Estimated Fold Time (Hours)"],
+        name="flat chart",
+        text=weekly["Hours"],
+        textposition="outside",
+        hovertemplate="<b>%{x}</b><br>%{y} hours<extra></extra>",
+        marker=dict(
+            color=weekly["colour"],
+            line=dict(
+            color=weekly["capacity_colour"],
+            width=3
+            )
+        )
+    ))
+
+    # add capacity line
+    fig.add_hline(
+        y=capacity,
+        line=dict(color="red", width=4, dash="dash"),
+        annotation_text=f"Capacity ({capacity})",
+        annotation_position="top right"
+    )
+
+    # add 75% capacity line
+    capacity=int(capacity*.75)
+    fig.add_hline(
+        y=capacity,
+        line=dict(color="pink", width=4, dash="dash"),
+        annotation_text=f"75% Capacity ({capacity})",
+        annotation_position="top right"
+    )
+
+    # update layout to look nice
+    fig.update_layout(
+        height=500,
+        margin=dict(l=40, r=40, t=40, b=40),
+        plot_bgcolor="rgba(0,0,0,0)",
+        paper_bgcolor="rgba(0,0,0,0)",
+
+        yaxis=dict(
+            title="Hours",
+            gridcolor="rgba(0,0,0,0.05)",
+            zeroline=False,
+            range=[0, y_max*1.1] # fixed scale
+        ),
+
+        xaxis=dict(
+            title="Week Ending",
+            showgrid=False
+        ),
+
+        showlegend=False,
+
+        font=dict(
+            family="Segoe UI, sans-serif",
+            size=13,
+            color="#1a1a1a"
+        )
+    )
+
+    st.plotly_chart(fig, use_container_width=True)
+
 def render_paint_next_week(weekly, capacity):
     st.markdown("## Next Available Week")
     new_job_value = st.number_input(
@@ -611,7 +785,7 @@ def render_paint_table(weekly, df):
     df_ts_week = df[df["Week Due"].isin(selected_weeks)]
     st.dataframe(df_ts_week.drop(columns=df_ts_week.columns[-2]))
 
-def render_weld_chart(plot_df):
+def render_weld_chart(plot_df, y_max):
 
     # highlight ts week
     # Get this week's label
@@ -656,7 +830,8 @@ def render_weld_chart(plot_df):
         yaxis=dict(
             title="Hours",
             gridcolor="rgba(0,0,0,0.05)",
-            zeroline=False
+            zeroline=False,
+            range=[0, y_max *1.1]
         ),
 
         xaxis=dict(
@@ -684,10 +859,10 @@ def render_weld_kpi(kpi_df, site, week, col):
     else:
         if week == "this":
             value = row["This Week Hours"].iloc[0]
-            title = "Total Hours to be Welded This Week"
+            title = "Total Hours to be Processed This Week"
         elif week == "next":
             value = row["Next Week Hours"].iloc[0]
-            title = "Total Hours to be Welded Next Week"
+            title = "Total Hours to be Processed Next Week"
         else:
             st.error("error wrong data")
             return
@@ -723,13 +898,13 @@ def render_machine_kpi(kpi_df, operation, week, col):
     </div>
     """, unsafe_allow_html=True)
 
-def render_saw_machine_kpi(kpi_df, week):
+def render_saw_bundle_kpi(kpi_df, week):
     if week == "this":
         value = kpi_df["This Week Hours"].iloc[0]
-        title = "Total Hours to be Saw Cut This Week"
+        title = "Total Hours to be Processed This Week"
     elif week == "next":
         value = kpi_df["Next Week Hours"].iloc[0]
-        title = "Total Hours to be Saw Cut Next Week"
+        title = "Total Hours to be Processed Next Week"
     else:
         st.error("error wrong data")
         return
@@ -741,10 +916,22 @@ def render_saw_machine_kpi(kpi_df, week):
     </div>
     """, unsafe_allow_html=True)
 
-
 def render_weld_table(df, site):
-    # filter by site first
-    df = df[df["Site"] == site]
-
-    filtered_df = weld_table_filters(df)
+    filtered_df = weld_table_filters(df, site)
     st.dataframe(filtered_df)
+
+def render_flat_table(df, site):
+    df = flat_table_filters(df, site)
+    st.dataframe(df)
+
+def render_machine_table(df):
+    filtered_df = machine_table_filters(df)
+    st.dataframe(filtered_df)
+
+def render_tube_table(df):
+    filtered_df = tube_table_filters(df)
+    st.dataframe(filtered_df)
+
+def render_fold_table(df, site):
+    df = fold_table_filters(df, site)
+    st.dataframe(df)

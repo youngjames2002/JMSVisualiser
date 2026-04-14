@@ -7,6 +7,7 @@ from io import BytesIO
 import msal
 import requests
 from io import StringIO
+from metrics import format_hours
 
 def load_data_local():
     ## CHANGE THIS ON DIFFERENT MACHINES
@@ -432,6 +433,38 @@ def clean_weld_data(df):
     clean_df["Week Ending"] = (
         pd.to_datetime(clean_df["Date Requested"]) + pd.offsets.Week(weekday=4)
     ).dt.strftime("%d/%m/%Y")
+    return clean_df
+
+def clean_flat_data(df):
+    clean_df = df.copy()
+    # strip unnescessary columns
+    clean_df.drop(['bundle-ID', 'Assign to:', 'Date Added'], axis=1, inplace=True)
+    # only non completed jobs
+    clean_df=clean_df[clean_df['Completed?'] != "Yes"]
+    # add week ending logic 
+    clean_df["Week Ending"] = (
+        pd.to_datetime(clean_df["Earliest Process Date"]) + pd.offsets.Week(weekday=4)
+    ).dt.strftime("%d/%m/%Y")
+    # add site logic
+    clean_df["Site"] = clean_df["Machine"].str.contains("REGIUS", case=False, na=False).map({True: "Ballymena", False: "Kilrea"})
+    # clean up hours for visuals
+    clean_df["Hours"] = clean_df["Estimated Bundle Time (Hours)"].apply(format_hours)
+    return clean_df
+
+def clean_fold_data(df):
+    clean_df = df.copy()
+    # strip unnescessary columns
+    clean_df.drop(['bundle-ID', 'Assign to:', 'Date Added'], axis=1, inplace=True)
+    # only non completed jobs
+    clean_df=clean_df[clean_df['Completed?'] != "Yes"]
+    # add week ending logic 
+    clean_df["Week Ending"] = (
+        pd.to_datetime(clean_df["Earliest Fold Date"]) + pd.offsets.Week(weekday=4)
+    ).dt.strftime("%d/%m/%Y")
+    # rename fold site to Site
+    clean_df = clean_df.rename(columns={"Fold Site": "Site"})
+    # clean up hours for visuals
+    clean_df["Hours"] = clean_df["Estimated Fold Time (Hours)"].apply(format_hours)
     return clean_df
 
 def remove_completed_jobs(df, resource):

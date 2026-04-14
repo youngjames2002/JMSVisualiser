@@ -52,9 +52,9 @@ filtered_df = clean_df[
 ]
 
 # chart by week
-weekly = build_machine_chart_data(clean_df, operation_filter)
+weekly, y_max = build_machine_chart_data(clean_df, operation_filter)
 if weekly.empty:
     st.warning("No data selected")
 else:
-    render_weld_chart(weekly)
-    st.dataframe(filtered_df)
+    render_weld_chart(weekly, y_max)
+    render_machine_table(filtered_df)

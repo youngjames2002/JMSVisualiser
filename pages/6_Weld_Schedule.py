@@ -37,8 +37,8 @@ else:
 st.markdown(f"""<h3>Currently showing: {site}<h3>""", unsafe_allow_html=True)
 
 # chart by week
-weekly = build_weld_chart_data(clean_df, site)
-render_weld_chart(weekly)
+weekly, y_max = build_weld_chart_data(clean_df, site)
+render_weld_chart(weekly, y_max)
 
 render_weld_table(clean_df, site)
     

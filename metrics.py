@@ -214,7 +214,7 @@ def capacity_hours(section_name):
     if section_name == "Tube Cutting":
         return 28
     elif section_name == "Flat Cutting":
-        return 152
+        return 148
     elif section_name == "Folding":
         return 190
     else:
@@ -340,6 +340,112 @@ def build_saw_kpis(df):
 
     return kpi_df
 
+def build_flat_kpis(df):
+    df = df.copy()
+
+    # Fix column names (optional but safer)
+    df.columns = df.columns.str.strip()
+
+    # Convert types
+    df["Week Ending"] = pd.to_datetime(df["Week Ending"], dayfirst=True, errors="coerce")
+    df["Estimated Bundle Time (Hours)"] = pd.to_numeric(df["Estimated Bundle Time (Hours)"], errors="coerce").fillna(0)
+
+    # Get this Friday + next Friday
+    today = pd.Timestamp.today().normalize()
+    this_week = (today + pd.offsets.Week(weekday=4)).normalize()
+    next_week = this_week + pd.Timedelta(days=7)
+
+    # Aggregate
+    kpi_df = (
+        df[df["Week Ending"].isin([this_week, next_week])]
+        .groupby(["Site", "Week Ending"])["Estimated Bundle Time (Hours)"]
+        .sum()
+        .unstack(fill_value=0)
+        .rename(columns={
+            this_week: "This Week Hours",
+            next_week: "Next Week Hours"
+        })
+        .reset_index()
+    )
+
+    # Ensure both columns exist (in case one week missing)
+    for col in ["This Week Hours", "Next Week Hours"]:
+        if col not in kpi_df:
+            kpi_df[col] = 0
+
+    kpi_df["This Week Hours"] = kpi_df["This Week Hours"].apply(format_hours)
+    kpi_df["Next Week Hours"] = kpi_df["Next Week Hours"].apply(format_hours)
+
+    return kpi_df
+
+def build_fold_kpis(df):
+    df = df.copy()
+
+    # Fix column names (optional but safer)
+    df.columns = df.columns.str.strip()
+
+    # Convert types
+    df["Week Ending"] = pd.to_datetime(df["Week Ending"], dayfirst=True, errors="coerce")
+    df["Estimated Fold Time (Hours)"] = pd.to_numeric(df["Estimated Fold Time (Hours)"], errors="coerce").fillna(0)
+
+    # Get this Friday + next Friday
+    today = pd.Timestamp.today().normalize()
+    this_week = (today + pd.offsets.Week(weekday=4)).normalize()
+    next_week = this_week + pd.Timedelta(days=7)
+
+    # Aggregate
+    kpi_df = (
+        df[df["Week Ending"].isin([this_week, next_week])]
+        .groupby(["Site", "Week Ending"])["Estimated Fold Time (Hours)"]
+        .sum()
+        .unstack(fill_value=0)
+        .rename(columns={
+            this_week: "This Week Hours",
+            next_week: "Next Week Hours"
+        })
+        .reset_index()
+    )
+
+    # Ensure both columns exist (in case one week missing)
+    for col in ["This Week Hours", "Next Week Hours"]:
+        if col not in kpi_df:
+            kpi_df[col] = 0
+
+    kpi_df["This Week Hours"] = kpi_df["This Week Hours"].apply(format_hours)
+    kpi_df["Next Week Hours"] = kpi_df["Next Week Hours"].apply(format_hours)
+
+    return kpi_df
+
+
+def build_tube_kpis(df):
+    df = df.copy()
+    df.columns = df.columns.str.strip()
+
+    df["Week Ending"] = pd.to_datetime(df["Week Ending"], dayfirst=True, errors="coerce")
+    df["Estimated Bundle Time (Hours)"] = pd.to_numeric(df["Estimated Bundle Time (Hours)"], errors="coerce").fillna(0)
+
+    today = pd.Timestamp.today().normalize()
+    this_week = (today + pd.offsets.Week(weekday=4)).normalize()
+    next_week = this_week + pd.Timedelta(days=7)
+
+    grouped = (
+        df[df["Week Ending"].isin([this_week, next_week])]
+        .groupby("Week Ending")["Estimated Bundle Time (Hours)"]
+        .sum()
+    )
+
+    # Build KPI row manually
+    kpi_df = pd.DataFrame({
+        "This Week Hours": [grouped.get(this_week, 0)],
+        "Next Week Hours": [grouped.get(next_week, 0)]
+    })
+
+    # Format
+    kpi_df["This Week Hours"] = kpi_df["This Week Hours"].apply(format_hours)
+    kpi_df["Next Week Hours"] = kpi_df["Next Week Hours"].apply(format_hours)
+
+    return kpi_df
+
 def format_hours(hours):
     h = int(hours)
     m = int(round((hours - h) * 60))
@@ -347,6 +453,14 @@ def format_hours(hours):
 
 def build_weld_chart_data(df, site):
     df = df.copy()
+
+    # get global max for fixed graph scale
+    full_weekly = (
+        df.groupby("Week Ending")["Hours Plan"]
+        .sum()
+        .reset_index()
+    )
+    y_max = full_weekly["Hours Plan"].max() if not full_weekly.empty else 0
 
     # filter to only appropriate site
     df = df[df["Site"] == site]
@@ -369,7 +483,7 @@ def build_weld_chart_data(df, site):
     # Format label for display
     weekly["Week Label"] = weekly["Week Ending"].dt.strftime("%d %b")
 
-    return weekly
+    return weekly, y_max
 
 def build_machine_chart_data(df, operation=None):
     df = df.copy()
@@ -378,13 +492,21 @@ def build_machine_chart_data(df, operation=None):
     df.columns = df.columns.str.strip()
     df["Operation"] = df["Operation"].astype(str).str.strip()
 
+    # get global max for fixed graph scale
+    full_weekly = (
+        df.groupby("Week Ending")["Hours Plan"]
+        .sum()
+        .reset_index()
+    )
+    y_max = full_weekly["Hours Plan"].max() if not full_weekly.empty else 0
+
     # -----------------------------
     # Handle filtering properly
     # -----------------------------
     if operation is not None:
         # If empty list → return empty df
         if isinstance(operation, list) and len(operation) == 0:
-            return pd.DataFrame(columns=["Week Ending", "Hours Plan", "Week Label"])
+            return pd.DataFrame(columns=["Week Ending", "Hours Plan", "Week Label"]), 0
 
         # If single string → convert to list
         if isinstance(operation, str):
@@ -416,7 +538,7 @@ def build_machine_chart_data(df, operation=None):
 
     weekly["Week Label"] = weekly["Week Ending"].dt.strftime("%d %b")
 
-    return weekly
+    return weekly, y_max
 
 def build_saw_chart_data(df):
     df = df.copy()
@@ -441,7 +563,103 @@ def build_saw_chart_data(df):
 
     return weekly
 
-def weld_table_filters(df):
+def build_tube_chart_data(df):
+    df = df.copy()
+
+    # Clean columns
+    df.columns = df.columns.str.strip()
+
+    # Convert types
+    df["Week Ending"] = pd.to_datetime(df["Week Ending"], dayfirst=True, errors="coerce")
+    df["Estimated Bundle Time (Hours)"] = pd.to_numeric(df["Estimated Bundle Time (Hours)"], errors="coerce").fillna(0)
+
+    # Aggregate to weekly level
+    weekly = (
+        df.groupby("Week Ending")["Estimated Bundle Time (Hours)"]
+        .sum()
+        .reset_index()
+        .sort_values("Week Ending")
+    )
+
+    # Format label for display
+    weekly["Week Label"] = weekly["Week Ending"].dt.strftime("%d %b")
+    weekly["Hours"] = weekly["Estimated Bundle Time (Hours)"].apply(format_hours)
+
+    return weekly
+
+def build_flat_chart_data(df, site):
+    df = df.copy()
+
+    # get global max for fixed graph scale
+    full_weekly = (
+        df.groupby("Week Ending")["Estimated Bundle Time (Hours)"]
+        .sum()
+        .reset_index()
+    )
+    y_max = full_weekly["Estimated Bundle Time (Hours)"].max() if not full_weekly.empty else 0
+
+    # filter to only appropriate site
+    df = df[df["Site"] == site]
+
+    # Clean columns
+    df.columns = df.columns.str.strip()
+
+    # Convert types
+    df["Week Ending"] = pd.to_datetime(df["Week Ending"], dayfirst=True, errors="coerce")
+    df["Estimated Bundle Time (Hours)"] = pd.to_numeric(df["Estimated Bundle Time (Hours)"], errors="coerce").fillna(0)
+
+    # Aggregate to weekly level
+    weekly = (
+        df.groupby("Week Ending")["Estimated Bundle Time (Hours)"]
+        .sum()
+        .reset_index()
+        .sort_values("Week Ending")
+    )
+
+    # Format label for display
+    weekly["Week Label"] = weekly["Week Ending"].dt.strftime("%d %b")
+    weekly["Hours"] = weekly["Estimated Bundle Time (Hours)"].apply(format_hours)
+
+    return weekly, y_max
+
+def build_fold_chart_data(df, site):
+    df = df.copy()
+
+    # get global max for fixed graph scale
+    full_weekly = (
+        df.groupby("Week Ending")["Estimated Fold Time (Hours)"]
+        .sum()
+        .reset_index()
+    )
+    y_max = full_weekly["Estimated Fold Time (Hours)"].max() if not full_weekly.empty else 0
+
+    # filter to only appropriate site
+    df = df[df["Site"] == site]
+
+    # Clean columns
+    df.columns = df.columns.str.strip()
+
+    # Convert types
+    df["Week Ending"] = pd.to_datetime(df["Week Ending"], dayfirst=True, errors="coerce")
+    df["Estimated Fold Time (Hours)"] = pd.to_numeric(df["Estimated Fold Time (Hours)"], errors="coerce").fillna(0)
+
+    # Aggregate to weekly level
+    weekly = (
+        df.groupby("Week Ending")["Estimated Fold Time (Hours)"]
+        .sum()
+        .reset_index()
+        .sort_values("Week Ending")
+    )
+
+    # Format label for display
+    weekly["Week Label"] = weekly["Week Ending"].dt.strftime("%d %b")
+    weekly["Hours"] = weekly["Estimated Fold Time (Hours)"].apply(format_hours)
+
+    return weekly, y_max
+    
+
+def weld_table_filters(df, site):
+    df = df[df["Site"] == site]
     # filter by week ending
     weeks_dt = sorted(
         pd.to_datetime(df["Week Ending"], dayfirst=True).dropna().unique()
@@ -483,3 +701,100 @@ def weld_table_filters(df):
     filtered_df = filtered_df.sort_values("Hours Plan", ascending=False)
     
     return filtered_df
+
+def machine_table_filters(df):
+     # filter by week ending
+    weeks_dt = sorted(
+        pd.to_datetime(df["Week Ending"], dayfirst=True).dropna().unique()
+    )
+
+    weeks = [d.strftime("%d/%m/%Y") for d in weeks_dt]
+
+    # Get this week's Friday
+    today = pd.Timestamp.today().normalize()
+    this_week = (today + pd.offsets.Week(weekday=4)).strftime("%d/%m/%Y")
+
+    # Set default (only if it exists in list)
+    default_week = [this_week] if this_week in weeks else []
+
+    selected_weeks = st.multiselect(
+        "Filter By Week(s)",
+        options=weeks,
+        default=default_week,
+        key="week_filter"
+    )
+
+    df = df[df["Week Ending"].isin(selected_weeks)]
+    df = df.drop(columns=["Site", "Customer Grouped", "Hours Plan"], errors="ignore")
+    return df
+
+def flat_table_filters(df, site):
+    df = df.copy()
+    # filter by site
+    if site == "Ballymena":
+        df = df[df["Machine"] == "Regius"]
+    elif site == "Kilrea":
+        df = df[df["Machine"] == "Ensis"]
+
+    # strip columns and reorder
+    df = df.drop(columns=["Completed?", "Customer Grouped", "Site"])
+    df = df[[
+        "Bundle/Job",
+        "Hours",
+        "Customer", 
+        "Earliest Process Date",
+        "Week Ending",
+        "Sales Orders Included in Bundle",
+        "Folding Required?",
+        "Earliest Fold Date",
+        "Estimated Fold Time (Hours)",
+        "Fold Site",
+        "Welding Required?",
+        "Finishing Required?",
+        "Type",
+        "Machine"
+    ]]
+
+    # sort by num hours
+    df = df.sort_values("Hours", ascending=False)
+    return df
+
+def fold_table_filters(df, site):
+    df = df.copy()
+    # site filter
+    df = df[df["Site"] == site]
+    #strip columns and reorder
+    df = df.drop(columns=["Completed?", "Customer Grouped", "Machine", "Estimated Bundle Time (Hours)", "Earliest Process Date", "Type", "Estimated Fold Time (Hours)", "Folding Required?"])
+    df = df[[
+        "Bundle/Job",
+        "Hours",
+        "Customer",
+        "Earliest Fold Date",
+        "Week Ending",
+        "Site",
+        "Sales Orders Included in Bundle",
+        "Welding Required?",
+        "Finishing Required?"
+    ]]
+    #sort by num hours
+    df = df.sort_values("Hours", ascending=False)
+    return df
+
+def tube_table_filters(df):
+    df=df.copy()
+    # strip columns and reorder
+    df = df.drop(columns=["Completed?", "Customer Grouped", "Folding Required?", "Earliest Fold Date", "Estimated Fold Time (Hours)", "Fold Site", "Welding Required?", "Finishing Required?"])
+    df = df[[
+        "Bundle/Job",
+        "Hours",
+        "Customer", 
+        "Earliest Process Date",
+        "Week Ending",
+        "Sales Orders Included in Bundle",
+        "Type",
+        "Machine"
+    ]]
+
+    # sort by num hours
+    df = df.sort_values("Hours", ascending=False)
+    return df
