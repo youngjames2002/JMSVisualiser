@@ -3,20 +3,7 @@ from data import *
 from metrics import *
 from ui_components import *
 
-import plotly.io as pio
-pio.templates.default = "simple_white"
-
-from login import require_auth
-require_auth()
-
-st.set_page_config(layout="wide")
-
-#load css
-load_css('stylesheet.css')
-
-tcol1, tcol2 = st.columns([1,4])
-tcol2.title("Tube Cutting")
-render_logo(tcol1)
+page_setup("Tube Cutting")
 
 df = load_data_sp()
 df = df[df["Type"]=="TUBE"]

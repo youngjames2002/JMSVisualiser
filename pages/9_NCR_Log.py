@@ -3,21 +3,7 @@ from data import *
 from ui_components import *
 from ncr_functions import *
 
-import plotly.io as pio
-pio.templates.default = "simple_white"
-
-st.set_page_config(layout="wide")
-
-from login import require_auth
-require_auth()
-
-#load css
-load_css('stylesheet.css')
-
-# title
-tcol1, tcol2 = st.columns([1,4])
-tcol2.title("NCR Log Overview")
-render_logo(tcol1)
+page_setup("NCR Log")
 
 # load data from sheet
 df = load_data_ncr_sp()

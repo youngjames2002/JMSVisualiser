@@ -235,27 +235,76 @@ def split_by_urgency(df):
     future_df = df[df["Week"] > current_week]
     return late_df, week_df, future_df
 
-def build_fold_kpis(df):
-    df = df.copy()
-    df.columns = df.columns.str.strip()
-
-    df["Week Ending"] = pd.to_datetime(df["Week Ending"], dayfirst=True, errors="coerce")
-    df["Estimated Fold Time (Hours)"] = pd.to_numeric(df["Estimated Fold Time (Hours)"], errors="coerce").fillna(0)
-
+def _this_and_next_friday():
     today = pd.Timestamp.today().normalize()
     this_week = (today + pd.offsets.Week(weekday=4)).normalize()
     next_week = this_week + pd.Timedelta(days=7)
+    return this_week, next_week
 
-    # Late hours per site
-    late_df = (
-        df[df["Week Ending"] < this_week]
-        .groupby("Site")["Estimated Fold Time (Hours)"]
-        .sum()
-    )
+
+def build_tube_kpis(df):
+    """KPIs for tube cutting (single site, no grouping)."""
+    df = df.copy()
+    df.columns = df.columns.str.strip()
+    df["Week Ending"] = pd.to_datetime(df["Week Ending"], dayfirst=True, errors="coerce")
+    df["Estimated Bundle Time (Hours)"] = pd.to_numeric(df["Estimated Bundle Time (Hours)"], errors="coerce").fillna(0)
+
+    this_week, next_week = _this_and_next_friday()
+    hours_col = "Estimated Bundle Time (Hours)"
+
+    late_hours = df[df["Week Ending"] < this_week][hours_col].sum()
+    grouped = df[df["Week Ending"].isin([this_week, next_week])].groupby("Week Ending")[hours_col].sum()
+
+    kpi_df = pd.DataFrame({
+        "Late Hours": [late_hours],
+        "This Week Hours": [grouped.get(this_week, 0)],
+        "Next Week Hours": [grouped.get(next_week, 0)],
+    })
+    for col in ["Late Hours", "This Week Hours", "Next Week Hours"]:
+        kpi_df[col] = kpi_df[col].apply(format_hours)
+    return kpi_df
+
+
+def build_saw_kpis(df):
+    """KPIs for saw schedule (single site, no grouping)."""
+    df = df.copy()
+    df.columns = df.columns.str.strip()
+    df["Week Ending"] = pd.to_datetime(df["Week Ending"], dayfirst=True, errors="coerce")
+    df["Hours Plan"] = pd.to_numeric(df["Hours Plan"], errors="coerce").fillna(0)
+
+    this_week, next_week = _this_and_next_friday()
+    hours_col = "Hours Plan"
+
+    late_hours = df[df["Week Ending"] < this_week][hours_col].sum()
+    grouped = df[df["Week Ending"].isin([this_week, next_week])].groupby("Week Ending")[hours_col].sum()
+
+    kpi_df = pd.DataFrame({
+        "Late Hours": [late_hours],
+        "This Week Hours": [grouped.get(this_week, 0)],
+        "Next Week Hours": [grouped.get(next_week, 0)],
+    })
+    for col in ["Late Hours", "This Week Hours", "Next Week Hours"]:
+        kpi_df[col] = kpi_df[col].apply(format_hours)
+    return kpi_df
+
+
+def _build_site_kpis(df, group_col, hours_col):
+    """
+    Shared logic for KPI builders that group by a categorical column (Site or Operation).
+    Returns a DataFrame with group_col, Late Hours, This Week Hours, Next Week Hours.
+    """
+    df = df.copy()
+    df.columns = df.columns.str.strip()
+    df["Week Ending"] = pd.to_datetime(df["Week Ending"], dayfirst=True, errors="coerce")
+    df[hours_col] = pd.to_numeric(df[hours_col], errors="coerce").fillna(0)
+
+    this_week, next_week = _this_and_next_friday()
+
+    late_series = df[df["Week Ending"] < this_week].groupby(group_col)[hours_col].sum()
 
     kpi_df = (
         df[df["Week Ending"].isin([this_week, next_week])]
-        .groupby(["Site", "Week Ending"])["Estimated Fold Time (Hours)"]
+        .groupby([group_col, "Week Ending"])[hours_col]
         .sum()
         .unstack(fill_value=0)
         .rename(columns={this_week: "This Week Hours", next_week: "Next Week Hours"})
@@ -266,154 +315,28 @@ def build_fold_kpis(df):
         if col not in kpi_df:
             kpi_df[col] = 0
 
-    kpi_df["Late Hours"] = kpi_df["Site"].map(late_df).fillna(0)
+    kpi_df["Late Hours"] = kpi_df[group_col].map(late_series).fillna(0)
 
-    kpi_df["Late Hours"] = kpi_df["Late Hours"].apply(format_hours)
-    kpi_df["This Week Hours"] = kpi_df["This Week Hours"].apply(format_hours)
-    kpi_df["Next Week Hours"] = kpi_df["Next Week Hours"].apply(format_hours)
+    for col in ["Late Hours", "This Week Hours", "Next Week Hours"]:
+        kpi_df[col] = kpi_df[col].apply(format_hours)
 
     return kpi_df
 
 
 def build_weld_kpis(df):
-    df = df.copy()
-    df.columns = df.columns.str.strip()
+    return _build_site_kpis(df, group_col="Site", hours_col="Hours Plan")
 
-    df["Week Ending"] = pd.to_datetime(df["Week Ending"], dayfirst=True, errors="coerce")
-    df["Hours Plan"] = pd.to_numeric(df["Hours Plan"], errors="coerce").fillna(0)
 
-    today = pd.Timestamp.today().normalize()
-    this_week = (today + pd.offsets.Week(weekday=4)).normalize()
-    next_week = this_week + pd.Timedelta(days=7)
+def build_fold_kpis(df):
+    return _build_site_kpis(df, group_col="Site", hours_col="Estimated Fold Time (Hours)")
 
-    late_df = (
-        df[df["Week Ending"] < this_week]
-        .groupby("Site")["Hours Plan"]
-        .sum()
-    )
 
-    kpi_df = (
-        df[df["Week Ending"].isin([this_week, next_week])]
-        .groupby(["Site", "Week Ending"])["Hours Plan"]
-        .sum()
-        .unstack(fill_value=0)
-        .rename(columns={this_week: "This Week Hours", next_week: "Next Week Hours"})
-        .reset_index()
-    )
-
-    for col in ["This Week Hours", "Next Week Hours"]:
-        if col not in kpi_df:
-            kpi_df[col] = 0
-
-    kpi_df["Late Hours"] = kpi_df["Site"].map(late_df).fillna(0)
-
-    kpi_df["Late Hours"] = kpi_df["Late Hours"].apply(format_hours)
-    kpi_df["This Week Hours"] = kpi_df["This Week Hours"].apply(format_hours)
-    kpi_df["Next Week Hours"] = kpi_df["Next Week Hours"].apply(format_hours)
-
-    return kpi_df
+def build_flat_kpis(df):
+    return _build_site_kpis(df, group_col="Site", hours_col="Estimated Bundle Time (Hours)")
 
 
 def build_machine_kpis(df):
-    df = df.copy()
-    df.columns = df.columns.str.strip()
-
-    df["Week Ending"] = pd.to_datetime(df["Week Ending"], dayfirst=True, errors="coerce")
-    df["Hours Plan"] = pd.to_numeric(df["Hours Plan"], errors="coerce").fillna(0)
-
-    today = pd.Timestamp.today().normalize()
-    this_week = (today + pd.offsets.Week(weekday=4)).normalize()
-    next_week = this_week + pd.Timedelta(days=7)
-
-    late_df = (
-        df[df["Week Ending"] < this_week]
-        .groupby("Operation")["Hours Plan"]
-        .sum()
-    )
-
-    kpi_df = (
-        df[df["Week Ending"].isin([this_week, next_week])]
-        .groupby(["Operation", "Week Ending"])["Hours Plan"]
-        .sum()
-        .unstack(fill_value=0)
-        .rename(columns={this_week: "This Week Hours", next_week: "Next Week Hours"})
-        .reset_index()
-    )
-
-    for col in ["This Week Hours", "Next Week Hours"]:
-        if col not in kpi_df:
-            kpi_df[col] = 0
-
-    kpi_df["Late Hours"] = kpi_df["Operation"].map(late_df).fillna(0)
-
-    kpi_df["Late Hours"] = kpi_df["Late Hours"].apply(format_hours)
-    kpi_df["This Week Hours"] = kpi_df["This Week Hours"].apply(format_hours)
-    kpi_df["Next Week Hours"] = kpi_df["Next Week Hours"].apply(format_hours)
-
-    return kpi_df
-
-
-def build_saw_kpis(df):
-    df = df.copy()
-    df.columns = df.columns.str.strip()
-
-    df["Week Ending"] = pd.to_datetime(df["Week Ending"], dayfirst=True, errors="coerce")
-    df["Hours Plan"] = pd.to_numeric(df["Hours Plan"], errors="coerce").fillna(0)
-
-    today = pd.Timestamp.today().normalize()
-    this_week = (today + pd.offsets.Week(weekday=4)).normalize()
-    next_week = this_week + pd.Timedelta(days=7)
-
-    late_hours = df[df["Week Ending"] < this_week]["Hours Plan"].sum()
-
-    grouped = (
-        df[df["Week Ending"].isin([this_week, next_week])]
-        .groupby("Week Ending")["Hours Plan"]
-        .sum()
-    )
-
-    kpi_df = pd.DataFrame({
-        "Late Hours": [late_hours],
-        "This Week Hours": [grouped.get(this_week, 0)],
-        "Next Week Hours": [grouped.get(next_week, 0)]
-    })
-
-    kpi_df["Late Hours"] = kpi_df["Late Hours"].apply(format_hours)
-    kpi_df["This Week Hours"] = kpi_df["This Week Hours"].apply(format_hours)
-    kpi_df["Next Week Hours"] = kpi_df["Next Week Hours"].apply(format_hours)
-
-    return kpi_df
-
-def build_tube_kpis(df):
-    df = df.copy()
-    df.columns = df.columns.str.strip()
-
-    df["Week Ending"] = pd.to_datetime(df["Week Ending"], dayfirst=True, errors="coerce")
-    df["Estimated Bundle Time (Hours)"] = pd.to_numeric(df["Estimated Bundle Time (Hours)"], errors="coerce").fillna(0)
-
-    today = pd.Timestamp.today().normalize()
-    this_week = (today + pd.offsets.Week(weekday=4)).normalize()
-    next_week = this_week + pd.Timedelta(days=7)
-
-    late_hours = df[df["Week Ending"] < this_week]["Estimated Bundle Time (Hours)"].sum()
-
-    grouped = (
-        df[df["Week Ending"].isin([this_week, next_week])]
-        .groupby("Week Ending")["Estimated Bundle Time (Hours)"]
-        .sum()
-    )
-
-    kpi_df = pd.DataFrame({
-        "Late Hours": [late_hours],
-        "This Week Hours": [grouped.get(this_week, 0)],
-        "Next Week Hours": [grouped.get(next_week, 0)]
-    })
-
-    kpi_df["Late Hours"] = kpi_df["Late Hours"].apply(format_hours)
-    kpi_df["This Week Hours"] = kpi_df["This Week Hours"].apply(format_hours)
-    kpi_df["Next Week Hours"] = kpi_df["Next Week Hours"].apply(format_hours)
-
-    return kpi_df
+    return _build_site_kpis(df, group_col="Operation", hours_col="Hours Plan")
 
 def build_weld_chart_data(df, site):
     df = df.copy()

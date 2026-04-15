@@ -4,19 +4,12 @@ from ui_components import *
 
 st.set_page_config(layout="wide")
 
-from login import require_auth
-require_auth()
-
-load_css('stylesheet.css')
-
-tcol1, tcol2 = st.columns([1, 4])
-tcol2.title("Weld Schedule")
-render_logo(tcol1)
+page_setup("Weld Schedule")
 
 df = load_data_weld_sp()
 df = remove_completed_jobs(df, "weld")
 
-clean_df = clean_weld_data(df)
+clean_df = clean_weld_saw_machine_data(df)
 kpi_df = build_weld_kpis(clean_df)
 
 # KPIS HERE

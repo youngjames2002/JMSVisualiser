@@ -1,4 +1,4 @@
-# ui.py
+# ui_components.py
 import streamlit as st
 import plotly.express as px
 import pandas as pd
@@ -583,179 +583,119 @@ def render_paint_chart(weekly, xlabel, capacity):
 
     st.plotly_chart(fig, use_container_width=True)
 
-def render_flat_chart(weekly, capacity, y_max):
-    # highlight this week
+def _this_week_label():
     today = pd.Timestamp.today().normalize()
-    this_week = (today + pd.offsets.Week(weekday=4)).strftime("%d %b")
+    return (today + pd.offsets.Week(weekday=4)).strftime("%d %b")
 
-    # Create colour column
-    weekly["colour"] = weekly["Week Label"].apply(
-        lambda x: "#FFC300" if x == this_week else "#2E86C1"
-    )
 
-    # capacity colouring
+def _apply_weekly_colours(weekly, hours_col, capacity):
+    """Add 'colour' (current week highlight) and 'capacity_colour' (over-capacity border) columns."""
+    this_week = _this_week_label()
+    weekly["colour"] = weekly["Week Label"].apply(lambda x: "#FFC300" if x == this_week else "#2E86C1")
     weekly["capacity_colour"] = np.select(
-        [
-            weekly["Estimated Bundle Time (Hours)"] > capacity,
-            weekly["Estimated Bundle Time (Hours)"] > capacity * 0.75
-        ],
-        [
-            "red",
-            "orange"
-        ],
+        [weekly[hours_col] > capacity, weekly[hours_col] > capacity * 0.75],
+        ["red", "orange"],
         default="green"
     )
+    return weekly
+
+
+def _weekly_bar_layout(y_max):
+    return dict(
+        height=500, margin=dict(l=40, r=40, t=40, b=40),
+        plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)",
+        yaxis=dict(title="Hours", gridcolor="rgba(0,0,0,0.05)", zeroline=False, range=[0, y_max * 1.1]),
+        xaxis=dict(title="Week Ending", showgrid=False),
+        showlegend=False,
+        font=dict(family="Segoe UI, sans-serif", size=13, color="#1a1a1a")
+    )
+
+
+def render_flat_chart(weekly, capacity, y_max):
+    hours_col = "Estimated Bundle Time (Hours)"
+    weekly = _apply_weekly_colours(weekly, hours_col, capacity)
 
     fig = go.Figure()
     fig.add_trace(go.Bar(
-        x=weekly["Week Label"],
-        y=weekly["Estimated Bundle Time (Hours)"],
-        name="flat chart",
-        text=weekly["Hours"],
-        textposition="outside",
+        x=weekly["Week Label"], y=weekly[hours_col],
+        text=weekly["Hours"], textposition="outside",
         hovertemplate="<b>%{x}</b><br>%{y} hours<extra></extra>",
-        marker=dict(
-            color=weekly["colour"],
-            line=dict(
-            color=weekly["capacity_colour"],
-            width=3
-            )
-        )
+        marker=dict(color=weekly["colour"], line=dict(color=weekly["capacity_colour"], width=3))
     ))
-
-    # add capacity line
-    fig.add_hline(
-        y=capacity,
-        line=dict(color="red", width=4, dash="dash"),
-        annotation_text=f"Capacity ({capacity})",
-        annotation_position="top right"
-    )
-
-    # add 75% capacity line
-    capacity=int(capacity*.75)
-    fig.add_hline(
-        y=capacity,
-        line=dict(color="pink", width=4, dash="dash"),
-        annotation_text=f"75% Capacity ({capacity})",
-        annotation_position="top right"
-    )
-
-    # update layout to look nice
-    fig.update_layout(
-        height=500,
-        margin=dict(l=40, r=40, t=40, b=40),
-        plot_bgcolor="rgba(0,0,0,0)",
-        paper_bgcolor="rgba(0,0,0,0)",
-
-        yaxis=dict(
-            title="Hours",
-            gridcolor="rgba(0,0,0,0.05)",
-            zeroline=False,
-            range=[0, y_max*1.1] # fixed scale
-        ),
-
-        xaxis=dict(
-            title="Week Ending",
-            showgrid=False
-        ),
-
-        showlegend=False,
-
-        font=dict(
-            family="Segoe UI, sans-serif",
-            size=13,
-            color="#1a1a1a"
-        )
-    )
-
+    fig.add_hline(y=capacity, line=dict(color="red", width=4, dash="dash"),
+                  annotation_text=f"Capacity ({capacity})", annotation_position="top right")
+    fig.add_hline(y=int(capacity * 0.75), line=dict(color="pink", width=4, dash="dash"),
+                  annotation_text=f"75% Capacity ({int(capacity * 0.75)})", annotation_position="top right")
+    fig.update_layout(**_weekly_bar_layout(y_max))
     st.plotly_chart(fig, use_container_width=True)
+
 
 def render_fold_chart(weekly, capacity, y_max):
-    # highlight this week
-    today = pd.Timestamp.today().normalize()
-    this_week = (today + pd.offsets.Week(weekday=4)).strftime("%d %b")
-
-    # Create colour column
-    weekly["colour"] = weekly["Week Label"].apply(
-        lambda x: "#FFC300" if x == this_week else "#2E86C1"
-    )
-
-    # capacity colouring
-    weekly["capacity_colour"] = np.select(
-        [
-            weekly["Estimated Fold Time (Hours)"] > capacity,
-            weekly["Estimated Fold Time (Hours)"] > capacity * 0.75
-        ],
-        [
-            "red",
-            "orange"
-        ],
-        default="green"
-    )
+    hours_col = "Estimated Fold Time (Hours)"
+    weekly = _apply_weekly_colours(weekly, hours_col, capacity)
 
     fig = go.Figure()
     fig.add_trace(go.Bar(
-        x=weekly["Week Label"],
-        y=weekly["Estimated Fold Time (Hours)"],
-        name="flat chart",
-        text=weekly["Hours"],
-        textposition="outside",
+        x=weekly["Week Label"], y=weekly[hours_col],
+        text=weekly["Hours"], textposition="outside",
         hovertemplate="<b>%{x}</b><br>%{y} hours<extra></extra>",
-        marker=dict(
-            color=weekly["colour"],
-            line=dict(
-            color=weekly["capacity_colour"],
-            width=3
-            )
-        )
+        marker=dict(color=weekly["colour"], line=dict(color=weekly["capacity_colour"], width=3))
     ))
-
-    # add capacity line
-    fig.add_hline(
-        y=capacity,
-        line=dict(color="red", width=4, dash="dash"),
-        annotation_text=f"Capacity ({capacity})",
-        annotation_position="top right"
-    )
-
-    # add 75% capacity line
-    capacity=int(capacity*.75)
-    fig.add_hline(
-        y=capacity,
-        line=dict(color="pink", width=4, dash="dash"),
-        annotation_text=f"75% Capacity ({capacity})",
-        annotation_position="top right"
-    )
-
-    # update layout to look nice
-    fig.update_layout(
-        height=500,
-        margin=dict(l=40, r=40, t=40, b=40),
-        plot_bgcolor="rgba(0,0,0,0)",
-        paper_bgcolor="rgba(0,0,0,0)",
-
-        yaxis=dict(
-            title="Hours",
-            gridcolor="rgba(0,0,0,0.05)",
-            zeroline=False,
-            range=[0, y_max*1.1] # fixed scale
-        ),
-
-        xaxis=dict(
-            title="Week Ending",
-            showgrid=False
-        ),
-
-        showlegend=False,
-
-        font=dict(
-            family="Segoe UI, sans-serif",
-            size=13,
-            color="#1a1a1a"
-        )
-    )
-
+    fig.add_hline(y=capacity, line=dict(color="red", width=4, dash="dash"),
+                  annotation_text=f"Capacity ({capacity})", annotation_position="top right")
+    fig.add_hline(y=int(capacity * 0.75), line=dict(color="pink", width=4, dash="dash"),
+                  annotation_text=f"75% Capacity ({int(capacity * 0.75)})", annotation_position="top right")
+    fig.update_layout(**_weekly_bar_layout(y_max))
     st.plotly_chart(fig, use_container_width=True)
+
+
+def render_weld_chart(plot_df, y_max):
+    this_week = _this_week_label()
+    plot_df["colour"] = plot_df["Week Label"].apply(lambda x: "#FFC300" if x == this_week else "#2E86C1")
+
+    fig = go.Figure()
+    fig.add_trace(go.Bar(
+        x=plot_df["Week Label"], y=plot_df["Hours Plan"],
+        text=plot_df["Hours Plan"].round(0), textposition="outside",
+        hovertemplate="<b>%{x}</b><br>%{y} hours<extra></extra>",
+        marker=dict(color=plot_df["colour"], line=dict(width=0))
+    ))
+    fig.update_layout(**_weekly_bar_layout(y_max))
+    st.plotly_chart(fig, use_container_width=True)
+
+
+def render_bar_chart(melted, column):
+    fig = px.bar(melted, x="Display Date", y="Hours", color="Colour Group",
+                 pattern_shape="Type", barmode="stack")
+    fig.update_traces(marker_line_width=0)
+    fig.update_layout(title="Total Hours by Date (Cutting + Folding)",
+                      xaxis_title="Date", yaxis_title="Total Hours", height=500,
+                      coloraxis_showscale=False)
+    fig.for_each_trace(
+        lambda trace: trace.update(marker_color="red" if "Late" in trace.name else "#2E86C1")
+    )
+    column.plotly_chart(fig, use_container_width=True)
+
+
+def render_line_chart(melted, column):
+    daily_totals = sum_hours_by_date(melted)
+    available_months = sorted(daily_totals["YearMonth"].unique())
+    current_month = pd.Timestamp.today().to_period("M")
+    default_index = available_months.index(current_month) if current_month in available_months else len(available_months) - 1
+
+    selected_month = column.selectbox(
+        "Select Month", available_months,
+        format_func=lambda x: x.strftime("%B %Y"), index=default_index
+    )
+    monthly_data = cumulative_data_line_chart(daily_totals, selected_month)
+
+    fig = px.line(monthly_data, x="Display Date", y="Cumulative Hours", markers=True)
+    fig.update_layout(
+        title=f"Cumulative Hours - {selected_month.strftime('%B %Y')}",
+        xaxis_title="Date", yaxis_title="Cumulative Hours", height=500
+    )
+    fig.update_yaxes(range=[0, monthly_data["Cumulative Hours"].max() * 1.05])
+    column.plotly_chart(fig, use_container_width=True)
 
 def render_paint_next_week(weekly, capacity):
     st.markdown("## Next Available Week")
@@ -850,79 +790,83 @@ def render_weld_chart(plot_df, y_max):
 
     st.plotly_chart(fig, use_container_width=True)
 
-def render_weld_kpi(kpi_df, site, week, col):
-    # Get row for site
-    row = kpi_df[kpi_df["Site"] == site]
-    if row.empty:
-        value = "0h"
-    else:
-        if week == "this":
-            value = row["This Week Hours"].iloc[0]
-            title = "Total Hours to be Processed This Week"
-        elif week == "next":
-            value = row["Next Week Hours"].iloc[0]
-            title = "Total Hours to be Processed Next Week"
-        elif week == "late":
-            value = row["Late Hours"].iloc[0]
-            title = "Total Hours Uncomplete Due in Previous Week(s)"
-        else:
-            st.error("error wrong data")
-            return
-
+def _kpi_card(col, title, value, card_class="black"):
+    """Render a single KPI card. card_class controls the CSS colour modifier."""
     col.markdown(f"""
-    <div class="app-card black">
+    <div class="app-card {card_class}">
         <h3 style="margin:0;">{title}</h3>
         <h1 style="margin:0;">{value}</h1>
     </div>
     """, unsafe_allow_html=True)
 
-def render_machine_kpi(kpi_df, operation, week, col):
-    # Get row for operation
-    row = kpi_df[kpi_df["Operation"] == operation]
+def render_kpi_card(kpi_df, lookup_col, lookup_val, week, col):
+    """
+    Unified KPI card renderer for grouped KPI tables (Site or Operation).
+    Replaces the separate render_weld_kpi and render_machine_kpi functions.
+
+    Args:
+        kpi_df:     DataFrame returned by build_*_kpis
+        lookup_col: Column to filter on, e.g. "Site" or "Operation"
+        lookup_val: Value to match, e.g. "Kilrea" or "CNC Milling"
+        week:       "late", "this", or "next"
+        col:        Streamlit column to render into
+    """
+    row = kpi_df[kpi_df[lookup_col] == lookup_val]
 
     if row.empty:
-        value = "0h"
+        value = "0h 0m"
+    elif week == "late":
+        value = row["Late Hours"].iloc[0]
+        title = "Total Late Hours"
+    elif week == "this":
+        value = row["This Week Hours"].iloc[0]
+        title = "Total Hours to be Processed This Week"
+    elif week == "next":
+        value = row["Next Week Hours"].iloc[0]
+        title = "Total Hours to be Processed Next Week"
     else:
-        if week == "this":
-            value = row["This Week Hours"].iloc[0]
-            title = "Total Hours to be Processed This Week"
-        elif week == "next":
-            value = row["Next Week Hours"].iloc[0]
-            title = "Total Hours to be Processed Next Week"
-        elif week == "late":
-            value = row["Late Hours"].iloc[0]
-            title = "Total Hours Uncomplete Due in Previous Week(s)"
-        else:
-            st.error("error wrong data")
-            return
+        col.error("render_kpi_card: unknown week value")
+        return
+    _kpi_card(col, title, value)
 
-    col.markdown(f"""
-    <div class="app-card black">
-        <h3 style="margin:0;">{title}</h3>
-        <h1 style="margin:0;">{value}</h1>
-    </div>
-    """, unsafe_allow_html=True)
 
-def render_saw_bundle_kpi(kpi_df, week):
-    if week == "this":
+def render_single_kpi(kpi_df, week, col=None):
+    """
+    KPI card renderer for ungrouped KPI tables (tube, saw, flat).
+    Replaces render_saw_bundle_kpi.
+
+    Args:
+        kpi_df: DataFrame with Late Hours / This Week Hours / Next Week Hours
+        week:   "late", "this", or "next"
+        col:    Streamlit column (optional; renders to main area if None)
+    """
+    target = col if col is not None else st
+
+    if week == "late":
+        value = kpi_df["Late Hours"].iloc[0]
+        title = "Total Late Hours"
+    elif week == "this":
         value = kpi_df["This Week Hours"].iloc[0]
         title = "Total Hours to be Processed This Week"
     elif week == "next":
         value = kpi_df["Next Week Hours"].iloc[0]
         title = "Total Hours to be Processed Next Week"
-    elif week == "late":
-        value = kpi_df["Late Hours"].iloc[0]
-        title = "Total Hours Uncomplete Due in Previous Week(s)"
     else:
-        st.error("error wrong data")
+        target.error("render_single_kpi: unknown week value")
         return
-    
-    st.markdown(f"""
-    <div class="app-card black">
-        <h3 style="margin:0;">{title}</h3>
-        <h1 style="margin:0;">{value}</h1>
-    </div>
-    """, unsafe_allow_html=True)
+
+    _kpi_card(target, title, value)
+
+
+# Backwards-compatible aliases — pages already using these names will still work
+def render_weld_kpi(kpi_df, site, week, col):
+    render_kpi_card(kpi_df, "Site", site, week, col)
+
+def render_machine_kpi(kpi_df, operation, week, col):
+    render_kpi_card(kpi_df, "Operation", operation, week, col)
+
+def render_saw_bundle_kpi(kpi_df, week):
+    render_single_kpi(kpi_df, week)
 
 def render_weld_table(df, site):
     df = df[df["Site"] == site]
@@ -944,3 +888,21 @@ def render_tube_table(df):
 def render_fold_table(df, site):
     df = fold_table_filters(df, site)
     st.dataframe(df)
+
+def page_setup(title):
+    """
+    Standard page initialisation: config, auth check, CSS, logo + title row.
+    Call once at the top of every page instead of repeating 9 lines of boilerplate.
+    """
+    import plotly.io as pio
+    pio.templates.default = "simple_white"
+
+    from login import require_auth
+    require_auth()
+
+    st.set_page_config(layout="wide")
+    load_css("stylesheet.css")
+
+    tcol1, tcol2 = st.columns([1, 4])
+    tcol2.title(title)
+    render_logo(tcol1)

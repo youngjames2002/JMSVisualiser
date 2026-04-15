@@ -1,53 +1,9 @@
 import pandas as pd
 import streamlit as st
 from openpyxl import load_workbook
-from pathlib import Path
-import io
-from io import BytesIO
+from io import BytesIO, StringIO
 import msal
 import requests
-from io import StringIO
-
-def load_data_local():
-    ## CHANGE THIS ON DIFFERENT MACHINES
-    filepath = r"C:\Users\james\OneDrive - JMS Metaltec\JMS Engineering Team - JMS Engineering Team SharePoint\JMS Master Schedule\testAutomation\bundleStagingSheet.xlsx"
-    df = pd.read_excel(filepath)
-
-    df["Earliest Process Date"] = pd.to_datetime(
-        df["Earliest Process Date"],
-        dayfirst=True,
-        errors="coerce"
-    )
-    df = apply_company_grouping(df)
-    return df
-
-def load_data_Bmena_local():
-    ## CHANGE THIS ON DIFFERENT MACHINES
-    src_file = src_file = Path.cwd() / r"C:\Users\james\OneDrive - JMS Metaltec\JMS Engineering Team - JMS Engineering Team SharePoint\Paint Schedule\Bmena Finishing Schedule.xlsm"
-    wb = load_workbook(filename=src_file, data_only=True)
-    sheet = wb["Schedule"]
-    lookup_table = sheet.tables["Table1"]
-    data = sheet[lookup_table.ref]
-    df = table_to_df(data)
-
-    return df
-
-def load_data_ncr_local():
-    src_file = src_file = Path.cwd() / r"C:\Users\james\OneDrive - JMS Metaltec\JMS Engineering Team - JMS Engineering Team SharePoint\NCR Log\NCR Log.xlsm"
-    wb = load_workbook(filename=src_file, data_only=True)
-    sheet = wb["1 - Non-Conformance Log"]
-    lookup_table = sheet.tables["Table1"]
-    data = sheet[lookup_table.ref]
-    df = table_to_df(data)
-
-    # fix dates
-    df["Date"] = pd.to_datetime(
-        df["Date"],
-        dayfirst=True,
-        errors="coerce"
-    )
-
-    return df
 
 @st.cache_data(show_spinner=True)
 def download_excel_from_sharepoint(site_name: str, file_path:str) -> BytesIO:
@@ -422,7 +378,7 @@ def clean_paint_data(df):
 
     return df
     
-def clean_weld_data(df):
+def clean_weld_saw_machine_data(df):
     clean_df = df.copy()
     #strip columns we dont use
     clean_df.drop(['PlannerDueDate', 'Task Description', 'PlannerTaskID', 'PlannerCreated', 'CreatedOn'], axis=1, inplace=True)
