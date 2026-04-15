@@ -853,7 +853,6 @@ def render_weld_chart(plot_df, y_max):
 def render_weld_kpi(kpi_df, site, week, col):
     # Get row for site
     row = kpi_df[kpi_df["Site"] == site]
-
     if row.empty:
         value = "0h"
     else:
@@ -864,8 +863,8 @@ def render_weld_kpi(kpi_df, site, week, col):
             value = row["Next Week Hours"].iloc[0]
             title = "Total Hours to be Processed Next Week"
         elif week == "late":
-            value = kpi_df["Late Hours"].iloc[0]
-            title = "Total Hours Late"
+            value = row["Late Hours"].iloc[0]
+            title = "Total Hours Uncomplete Due in Previous Week(s)"
         else:
             st.error("error wrong data")
             return
@@ -891,8 +890,8 @@ def render_machine_kpi(kpi_df, operation, week, col):
             value = row["Next Week Hours"].iloc[0]
             title = "Total Hours to be Processed Next Week"
         elif week == "late":
-            value = kpi_df["Late Hours"].iloc[0]
-            title = "Total Hours Late"
+            value = row["Late Hours"].iloc[0]
+            title = "Total Hours Uncomplete Due in Previous Week(s)"
         else:
             st.error("error wrong data")
             return
@@ -913,7 +912,7 @@ def render_saw_bundle_kpi(kpi_df, week):
         title = "Total Hours to be Processed Next Week"
     elif week == "late":
         value = kpi_df["Late Hours"].iloc[0]
-        title = "Total Hours Late"
+        title = "Total Hours Uncomplete Due in Previous Week(s)"
     else:
         st.error("error wrong data")
         return

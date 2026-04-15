@@ -22,9 +22,11 @@ kpi_df = build_weld_kpis(clean_df)
 # KPIS HERE
 kpicol1, kpicol2 = st.columns(2)
 kpicol1.title("Kilrea")
+render_weld_kpi(kpi_df, "Kilrea", "late", kpicol1)
 render_weld_kpi(kpi_df, "Kilrea", "this", kpicol1)
 render_weld_kpi(kpi_df, "Kilrea", "next", kpicol1)
 kpicol2.title("Ballymena")
+render_weld_kpi(kpi_df, "Ballymena", "late", kpicol2)
 render_weld_kpi(kpi_df, "Ballymena", "this", kpicol2)
 render_weld_kpi(kpi_df, "Ballymena", "next", kpicol2)
 
