@@ -455,7 +455,7 @@ def clean_fold_data(df):
     # strip unnescessary columns
     clean_df.drop(['bundle-ID', 'Assign to:', 'Date Added'], axis=1, inplace=True)
     # only non completed jobs
-    clean_df=clean_df[clean_df['Completed?'] != "Yes"]
+    clean_df=clean_df[clean_df['Fold Completed?'] != "Yes"]
     # add week ending logic 
     clean_df["Week Ending"] = (
         pd.to_datetime(clean_df["Earliest Fold Date"]) + pd.offsets.Week(weekday=4)
