@@ -1,11 +1,6 @@
-# machining changes to weld page:
-# site is done on operation i think? more complex logic
-# different operations - might need their own charts or their own categories or something
 import streamlit as st
 from data import *
 from ui_components import *
-
-st.set_page_config(layout="wide")
 
 page_setup("Machining Schedule")
 

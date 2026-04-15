@@ -614,37 +614,6 @@ def machine_table_filters(df):
     df = df.drop(columns=["Site", "Customer Grouped", "Hours Plan"], errors="ignore")
     return df
 
-def flat_table_filters(df, site):
-    df = df.copy()
-    # filter by site
-    if site == "Ballymena":
-        df = df[df["Machine"] == "Regius"]
-    elif site == "Kilrea":
-        df = df[df["Machine"] == "Ensis"]
-
-    # strip columns and reorder
-    df = df.drop(columns=["Completed?", "Customer Grouped", "Site"])
-    df = df[[
-        "Bundle/Job",
-        "Hours",
-        "Customer", 
-        "Earliest Process Date",
-        "Week Ending",
-        "Sales Orders Included in Bundle",
-        "Folding Required?",
-        "Earliest Fold Date",
-        "Estimated Fold Time (Hours)",
-        "Fold Site",
-        "Welding Required?",
-        "Finishing Required?",
-        "Type",
-        "Machine"
-    ]]
-
-    # sort by num hours
-    df = df.sort_values("Hours", ascending=False)
-    return df
-
 def fold_table_filters(df, site):
     df = df.copy()
     # site filter

@@ -2,8 +2,6 @@ import streamlit as st
 from data import *
 from ui_components import *
 
-st.set_page_config(layout="wide")
-
 page_setup("Saw Schedule")
 
 df = load_data_saw_sp()

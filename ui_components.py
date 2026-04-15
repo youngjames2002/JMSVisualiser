@@ -129,7 +129,6 @@ def render_late_status_ratio(late_df, week_df, future_df):
     st.plotly_chart(fig, use_container_width=True)
 
 def render_top_customers(df):
-    # DEBUG st.dataframe(df[["Customer Grouped", "Estimated Bundle Time (Hours)"]])
     top3 = (
         df.groupby("Customer Grouped")["Estimated Bundle Time (Hours)"]
         .sum()
@@ -725,70 +724,6 @@ def render_paint_table(weekly, df):
     df_ts_week = df[df["Week Due"].isin(selected_weeks)]
     st.dataframe(df_ts_week.drop(columns=df_ts_week.columns[-2]))
 
-def render_weld_chart(plot_df, y_max):
-
-    # highlight ts week
-    # Get this week's label
-    today = pd.Timestamp.today().normalize()
-    this_week = (today + pd.offsets.Week(weekday=4)).strftime("%d %b")
-
-    # Create colour column
-    plot_df["colour"] = plot_df["Week Label"].apply(
-        lambda x: "#FFC300" if x == this_week else "#2E86C1"
-    )
-
-    fig = go.Figure()
-
-    fig.add_trace(go.Bar(
-        x=plot_df["Week Label"],
-        y=plot_df["Hours Plan"],
-        text=plot_df["Hours Plan"].round(0),
-        textposition="outside",
-        hovertemplate="<b>%{x}</b><br>%{y} hours<extra></extra>",
-        marker=dict(
-            color=plot_df["colour"],
-            line=dict(width=0)
-        )
-    ))
-
-    # # Capacity line option if i get that info
-    # capacity = 200  # <-- change this
-    # fig.add_hline(
-    #     y=capacity,
-    #     line=dict(color="red", width=3, dash="dash"),
-    #     annotation_text=f"Capacity ({capacity}h)",
-    #     annotation_position="top right"
-    # )
-
-    fig.update_layout(
-        height=500,
-        margin=dict(l=40, r=40, t=40, b=40),
-
-        plot_bgcolor="rgba(0,0,0,0)",
-        paper_bgcolor="rgba(0,0,0,0)",
-
-        yaxis=dict(
-            title="Hours",
-            gridcolor="rgba(0,0,0,0.05)",
-            zeroline=False,
-            range=[0, y_max *1.1]
-        ),
-
-        xaxis=dict(
-            title="Week Ending",
-            showgrid=False
-        ),
-
-        showlegend=False,
-
-        font=dict(
-            family="Segoe UI, sans-serif",
-            size=13,
-            color="#1a1a1a"
-        )
-    )
-
-    st.plotly_chart(fig, use_container_width=True)
 
 def _kpi_card(col, title, value, card_class="black"):
     """Render a single KPI card. card_class controls the CSS colour modifier."""
@@ -872,10 +807,6 @@ def render_weld_table(df, site):
     df = df[df["Site"] == site]
     filtered_df = weld_table_filters(df)
     st.dataframe(filtered_df)
-
-def render_flat_table(df, site):
-    df = flat_table_filters(df, site)
-    st.dataframe(df)
 
 def render_machine_table(df):
     filtered_df = machine_table_filters(df)

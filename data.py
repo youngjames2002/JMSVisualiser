@@ -223,7 +223,7 @@ def load_so_sp():
     if bytes_io is None:
         return pd.DataFrame()  # return empty DataFrame if download failed
     
-    df = pd.read_csv(io.BytesIO(bytes_io.getvalue()))
+    df = pd.read_csv(BytesIO(bytes_io.getvalue()))
     return df
 
 

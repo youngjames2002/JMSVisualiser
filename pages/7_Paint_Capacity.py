@@ -2,8 +2,6 @@ import streamlit as st
 from data import *
 from ui_components import *
 
-st.set_page_config(layout="wide")
-
 page_setup("Paint Capacity")
 
 CAPACITY = 35000
