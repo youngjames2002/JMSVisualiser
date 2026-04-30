@@ -36,7 +36,8 @@ def clean_paint_data_from_api(api_response: dict) -> pd.DataFrame:
     df = pd.DataFrame(api_response["rows"], columns=api_response["columns"])
 
     # Filter out non-painted customers
-    df = df[~df["customer"].str.contains("Bamford|Wright|Cunningham", case=False, na=False)]
+    # this customer filter can defo be done on the API call to reduce the amount of records pulled
+    df = df[~df["customer"].str.contains("Bamford|Wright|Cunningham", case=False, na=False)] 
     # Filter for paint-related specifications
     df = df[df["specification"].str.contains(r"\bRAL\b|\bprime\b|\bpaint\b", case=False, na=False)]
 
