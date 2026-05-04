@@ -285,6 +285,21 @@ def load_so_sp():
     df = pd.read_csv(BytesIO(bytes_io.getvalue()))
     return df
 
+@st.cache_data(show_spinner=True)
+def load_so_statii():
+    BASE_URL     = st.secrets["statii"]["BASE_URL"]
+    token = get_statii_session_token()
+    response = requests.get(
+        f"{BASE_URL}/report/sales_orders",
+        headers={
+            "Authorization": f"Bearer {token}",
+            "Accept": "application/json",
+        },
+    )
+    response.raise_for_status()
+    data = response.json()["ResponseBody"]["data"]
+    return pd.DataFrame(data["rows"], columns=data["columns"])
+
 
 def apply_company_grouping(df):
     df=df.copy()
