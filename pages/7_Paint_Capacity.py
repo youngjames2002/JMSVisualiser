@@ -7,19 +7,25 @@ page_setup("Paint Capacity")
 CAPACITY = 35000
 CLOSE_CALL = 30000
 
-st.markdown("""
-Go to Sales Order Lines in Statii and export the report **'Paint Capacity'**  
-It should show the columns Line No, Customer, Specification, Price and Date Promised. Ensure that ALL rows are shown and not limited to 100.  
-Download that and then click 'open'. This should open a spreadsheet. Select All and copy, then paste that into the box below
-""")
-raw_data = st.text_area("Paste Statii Dump here")
-st.markdown("Hit Ctrl+Enter to generate Capacity Graphs")
+# OLD VERSION REQUIRING MANUAL DUMP IN
+# st.markdown("""
+# Go to Sales Order Lines in Statii and export the report **'Paint Capacity'**  
+# It should show the columns Line No, Customer, Specification, Price and Date Promised. Ensure that ALL rows are shown and not limited to 100.  
+# Download that and then click 'open'. This should open a spreadsheet. Select All and copy, then paste that into the box below
+# """)
+# raw_data = st.text_area("Paste Statii Dump here")
+# st.markdown("Hit Ctrl+Enter to generate Capacity Graphs")
 
-if not raw_data:
-    st.stop()
+# if not raw_data:
+#     st.stop()
 
-df = parse_paint_data(raw_data)
-df = clean_paint_data(df)
+# df = parse_paint_data(raw_data)
+# df = clean_paint_data(df)
+
+# NEW VERSION - STRAIGHT FROM STATII
+data = statii_paint_data()
+df =  clean_paint_data_from_api(data)
+# st.dataframe(df) # DEBUG
 
 daily_view = st.toggle("Toggle Weekly View vs Daily View (Next Month)", value=False)
 capacity = CAPACITY / 4 if daily_view else CAPACITY
