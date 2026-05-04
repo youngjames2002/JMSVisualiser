@@ -166,6 +166,7 @@ def build_paint_plot_data(day_week_toggle, df):
 
     # render graph
     weekly = plot_df.groupby(group_col)["Price"].sum().sort_index().reset_index()
+    weekly["Description"] = df["Description"].copy()
     weekly["Week Label"] = weekly[group_col].apply(
         lambda x: x.strftime("%d %b") if hasattr(x, "strftime") else x
     )

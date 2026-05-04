@@ -57,11 +57,12 @@ def clean_paint_data_from_api(api_response: dict) -> pd.DataFrame:
         "specification": "Specification",
         "price": "Price",
         "date_promised": "Date Promised",
+        "description" : "Description"
     })
 
     df["Price"] = pd.to_numeric(df["Price"], errors="coerce").fillna(0.0)
 
-    return df[["Line No", "Customer", "Specification", "Price", "Date Promised", "Week Due", "Week Label"]]
+    return df[["Line No", "Customer", "Specification", "Description", "Price", "Date Promised", "Week Due", "Week Label"]]
 
 @st.cache_data(show_spinner=True)
 def download_excel_from_sharepoint(site_name: str, file_path:str) -> BytesIO:
