@@ -5,7 +5,7 @@ from ui_components import *
 page_setup("Weld Schedule")
 
 df = load_data_weld_sp()
-df = remove_completed_jobs(df, "weld")
+df = remove_completed_jobs_statii(df, "weld")
 
 clean_df = clean_weld_saw_machine_data(df)
 kpi_df = build_weld_kpis(clean_df)

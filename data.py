@@ -32,6 +32,22 @@ def statii_paint_data():
     data = response.json()["ResponseBody"]["data"]
     return data
 
+@st.cache_data(show_spinner=True)
+def statii_completed_jobs():
+    BASE_URL     = st.secrets["statii"]["BASE_URL"]
+    token = get_statii_session_token()
+    response = requests.get(
+        f"{BASE_URL}/report/scheduling",
+        headers={
+            "Authorization": f"Bearer {token}",
+            "Accept": "application/json",
+        },
+        params={"filters": json.dumps({"status": "Complete"})},
+    )
+    response.raise_for_status()
+    data = response.json()["ResponseBody"]["data"]
+    return data
+
 def clean_paint_data_from_api(api_response: dict) -> pd.DataFrame:
     df = pd.DataFrame(api_response["rows"], columns=api_response["columns"])
 
@@ -498,14 +514,33 @@ def clean_fold_data(df):
 
 def remove_completed_jobs(df, resource):
     completed_df = load_data_completed_jobs(resource)
-    
+
     if completed_df.empty:
         return df
-    
+
     completed_job_numbers = completed_df["Number"].dropna().unique()
     df = df[~df["Number"].isin(completed_job_numbers)]
-    
+
     return df
+
+STATII_RESOURCE_MAP = {
+    "saw":     "Saw",
+    "weld":    "Welding",
+    "machine": "Machining",
+}
+
+def remove_completed_jobs_statii(df, resource):
+    completed_data = statii_completed_jobs()
+    if not completed_data or not completed_data.get("rows"):
+        return df
+    completed_df = pd.DataFrame(completed_data["rows"], columns=completed_data["columns"])
+    if "number" not in completed_df.columns:
+        return df
+    operation = STATII_RESOURCE_MAP.get(resource)
+    if operation and "operation" in completed_df.columns:
+        completed_df = completed_df[completed_df["operation"].str.contains(operation, case=False, na=False)]
+    completed_numbers = set(completed_df["number"].dropna().astype(str))
+    return df[~df["Number"].astype(str).isin(completed_numbers)]
 
 def format_hours(hours):
     h = int(hours)
