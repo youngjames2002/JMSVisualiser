@@ -39,7 +39,7 @@ def clean_paint_data_from_api(api_response: dict) -> pd.DataFrame:
     # this customer filter can defo be done on the API call to reduce the amount of records pulled
     df = df[~df["customer"].str.contains("Bamford|Wright|Cunningham", case=False, na=False)] 
     # Filter for paint-related specifications
-    df = df[df["specification"].str.contains(r"\bRAL\b|\bprime\b|\bpaint\b", case=False, na=False)]
+    df = df[df["specification"].str.contains(r"\bRAL\b|\bprime\b|\bpaint", case=False, na=False)]
 
     # Date handling — API returns ISO 8601 so no dayfirst needed
     df["date_promised"] = pd.to_datetime(df["date_promised"], errors="coerce")
