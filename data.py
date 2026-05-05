@@ -277,6 +277,26 @@ def load_data_saw_sp():
     df = apply_company_grouping(df)
     return df
 
+@st.cache_data(show_spinner=True)
+def load_data_rubber_sp():
+    bytes_io = download_excel_from_sharepoint(
+        site_name="JMSEngineeringTeam",
+        file_path="JMS Engineering Team SharePoint/Admin/Rubber Lining Teams Tool.xlsx"
+    )
+    if bytes_io is None:
+        return pd.DataFrame()  # return empty DataFrame if download failed
+
+    df = pd.read_excel(bytes_io)
+
+    df["Date Requested"] = pd.to_datetime(
+        df["Date Requested"],
+        dayfirst=True,
+        errors="coerce"
+    )
+    df.columns = df.columns.str.strip()
+    df = apply_company_grouping(df)
+    return df
+
 def table_to_df(data):
     rows_list=[]
 
@@ -524,9 +544,10 @@ def remove_completed_jobs(df, resource):
     return df
 
 STATII_RESOURCE_MAP = {
-    "saw":     "Saw",
-    "weld":    "Welding",
-    "machine": "Machining",
+    "saw":          "Saw",
+    "weld":         "Welding",
+    "machine":      "Machining",
+    "rubber lining": "Rubber lining",
 }
 
 def remove_completed_jobs_statii(df, resource):
