@@ -5,3 +5,4 @@ openpyxl
 msal
 requests
 streamlit-authenticator
+psycopg2-binary

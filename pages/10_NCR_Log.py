@@ -1,62 +1,52 @@
 import streamlit as st
-from data import *
-from ui_components import *
+from data import load_css
 from ncr_functions import *
 
-page_setup("NCR Log")
-
-# load data from sheet
-df = load_data_ncr_sp()
-df = clean_ncr_data(df)
-
-# date filter
-col1, col2 = st.columns([1, 4])
-with col1:
-    date_filter = st.date_input("Showing Only Data after this date: ", value=datetime.datetime(2025,1,1))
-date_filter = pd.to_datetime(date_filter)
-df = df[df["Date"] >= date_filter]
-
-# sales order metrics and chart
-col1, col2 = st.columns(2)
-col1.markdown("## Sales Orders Impact")
-col2.markdown("## Impact Over Time")
-so_df = load_so_sp()
-render_sales_order_impact(df, so_df, date_filter, col1)
-weekly = calculate_weekly_impact(df, so_df)
-render_impact_chart(weekly,date_filter,col2)
+st.set_page_config(layout="wide", page_title="NCR Log Dashboard", page_icon="📋")
 
 
-# internal/external and completion status
-col1, col2 = st.columns(2)
-col1.markdown("## Internal vs External Count")
-col2.markdown("## Completion Status")
-render_internal_chart(df, col1)
-render_progress_bars(df, col2)
+def inject_styles():
+    load_css("stylesheet.css")
+    st.markdown("""
+    <style>
+    .stApp { background-color: #f0f4fb; }
+    .main .block-container { padding-top: 1.5rem; max-width: 1400px; }
+    #MainMenu, footer, header { visibility: hidden; }
+    .stButton > button {
+        background-color: #2c7be5; color: white; border: none;
+        border-radius: 8px; padding: 10px 26px; font-weight: 600; font-size: 14px;
+    }
+    .stButton > button:hover { background-color: #1a5fc1; color: white; }
+    label, [data-testid="stWidgetLabel"] p {
+        font-size: 13px !important; font-weight: 600 !important; color: #112444 !important;
+    }
+    [data-testid="stDataEditor"] { border-radius: 10px; overflow: hidden; box-shadow: 0 1px 6px rgba(17,36,68,0.09); }
+    [data-testid="stCaptionContainer"] p, .stCaption p { color: #4a5568 !important; }
+    [data-testid="stProgressLabel"], .stProgress p, [data-testid="stProgressBar"] + p { color: #112444 !important; }
+    div[data-testid="stText"] p { color: #112444 !important; }
+    </style>
+    """, unsafe_allow_html=True)
 
 
-# render overview dataframes
-col1, col2, col3, col4 = st.columns(4)
-col1.markdown(f"Count By Customer")
-render_df(df, col1, "Customer Grouped")
-col2.markdown(f"Count By Department")
-render_df(df, col2, "Department")
-col3.markdown(f"Count By Person Reporting")
-render_df(df, col3, "Non Conformance Received/Recorded By")
-col4.markdown(f"Count By Root Cause")
-render_df(df, col4, "Root Cause")
+def main():
+    inject_styles()
+    date_filter = render_date_filter()
 
-st.markdown(f"## FULL NCR LOG SINCE {date_filter.strftime('%d %b %Y')}")
-st.dataframe(df)
+    conn = get_connection()
+    df   = load_ncr_data(conn)
+    df   = df[df["date"] >= date_filter]
 
-# refresh data
-if st.button("Refresh Data"):
-    st.cache_data.clear()
-    st.rerun()
-    df = load_data_ncr_sp()
-    df = clean_ncr_data(df)
-st.markdown("Note: It will take a few minutes after changes are made on sharepoint before they can register on the dashboard")
+    render_page_header(date_filter)
 
-# ts debugs
-debug = st.toggle("View Debug Data?", value=False)
-if debug:
-    render_debug_data(df, date_filter)
+    names, customers, departments, delegated = get_filter_options(df)
+
+    render_kpi_section(df)
+    render_breakdown_section(df, customers, departments)
+    render_so_and_weekly(df, date_filter)
+    render_completion_stats(df)
+    render_ncr_table(df, conn, names, customers, departments, delegated)
+
+    conn.close()
+
+
+main()

@@ -62,3 +62,331 @@
 
 /* Spacing helper */
 .mt-10 { margin-top: 10px; }
+
+body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background-color: #ffffff;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.header {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    padding: 20px;
+}
+
+.logo {
+    width: 200px;
+}
+
+.container {
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    min-height: 100vh;
+    padding-top: 70px;
+    padding-bottom: 40px;
+}
+
+form {
+    background: #112444;
+    color: #1f8cf1;
+    padding: 30px;
+    border-radius: 8px;
+    width: 800px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 15px;
+}
+
+h2 {
+    grid-column: span 2;
+    margin-bottom: 20px;
+    text-align: center;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+}
+
+.full-width {
+    grid-column: span 2;
+}
+
+label {
+    display: block;
+    margin-top: 12px;
+    font-size: 14px;
+}
+
+input,
+textarea,
+select {
+    width: 100%;
+    padding: 8px;
+    margin-top: 5px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 14px;
+}
+
+textarea {
+    resize: vertical;
+    min-height: 80px;
+}
+
+button {
+    margin-top: 20px;
+    width: 100%;
+    padding: 10px;
+    border: none;
+    background-color: #2c7be5;
+    color: white;
+    font-size: 14px;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+button:hover {
+    background-color: #1a5fc1;
+}
+
+.department-group {
+    background: #ffffff;
+    padding: 15px;
+    border-radius: 10px;
+    border: 1px solid #e0e0e0;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.department-group label {
+    font-weight: 600;
+    display: block;
+    margin-bottom: 8px;
+}
+
+.menu-card {
+    background: #112444;
+    color: #1f8cf1;
+    padding: 40px;
+    border-radius: 10px;
+    width: 100%;
+    max-width: 450px;
+    text-align: center;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+}
+
+.subtitle {
+    color: #ccc;
+    margin-bottom: 25px;
+}
+
+.menu-btn {
+    display: block;
+    text-decoration: none;
+    background-color: #2c7be5;
+    color: white;
+    padding: 12px;
+    margin: 10px 0;
+    border-radius: 6px;
+    font-size: 15px;
+    transition: 0.2s ease;
+}
+
+.menu-btn:hover {
+    background-color: #1a5fc1;
+    transform: translateY(-2px);
+}
+
+.menu-btn.secondary {
+    background-color: transparent;
+    border: 1px solid #1f8cf1;
+    color: #1f8cf1;
+}
+
+.menu-btn.secondary:hover {
+    background-color: #1f8cf1;
+    color: white;
+}
+
+/* ── Dashboard – page header banner ── */
+.page-header {
+    background: #112444;
+    color: white;
+    padding: 22px 32px;
+    border-radius: 12px;
+    margin-bottom: 24px;
+}
+.page-header h1 {
+    margin: 0;
+    font-size: 24px;
+    font-weight: 700;
+    color: white;
+    letter-spacing: -0.3px;
+}
+.page-header p {
+    margin: 4px 0 0;
+    font-size: 13px;
+    color: rgba(255, 255, 255, 0.65);
+}
+
+/* ── Dashboard – section heading ── */
+.section-heading {
+    font-size: 14px;
+    font-weight: 700;
+    color: #112444;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid #2c7be5;
+    margin: 28px 0 18px;
+}
+
+/* ── Dashboard – KPI metric card ── */
+.kpi-card {
+    background: #ffffff;
+    border-radius: 12px;
+    padding: 22px 24px;
+    box-shadow: 0 1px 6px rgba(17, 36, 68, 0.09);
+    border-top: 4px solid #2c7be5;
+    height: 100%;
+}
+.kpi-card.accent-green  { border-top-color: #28a745; }
+.kpi-card.accent-orange { border-top-color: #fd7e14; }
+.kpi-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: #7a8baa;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    margin-bottom: 8px;
+}
+.kpi-value {
+    font-size: 36px;
+    font-weight: 800;
+    color: #112444;
+    line-height: 1.1;
+}
+.kpi-sub {
+    font-size: 13px;
+    color: #7a8baa;
+    margin-top: 5px;
+}
+
+/* ── Dashboard – stat breakdown card ── */
+.stat-card {
+    background: #ffffff;
+    border-radius: 10px;
+    padding: 18px 20px 12px;
+    box-shadow: 0 1px 6px rgba(17, 36, 68, 0.08);
+}
+.stat-result {
+    margin-top: 8px;
+    font-size: 14px;
+    color: #112444;
+    font-weight: 600;
+}
+.stat-result span {
+    color: #2c7be5;
+    font-weight: 700;
+}
+
+/* ── Dashboard – info card (SO%, weekly) ── */
+.info-card {
+    background: #ffffff;
+    border-radius: 10px;
+    padding: 18px 22px;
+    box-shadow: 0 1px 6px rgba(17, 36, 68, 0.08);
+    font-size: 14px;
+    color: #112444;
+    font-weight: 500;
+}
+.info-card .info-value {
+    font-size: 28px;
+    font-weight: 800;
+    color: #2c7be5;
+    display: block;
+    margin-top: 4px;
+}
+.info-card .info-delta {
+    font-size: 13px;
+    color: #7a8baa;
+}
+.info-sub-stats {
+    display: flex;
+    gap: 16px;
+    margin-top: 12px;
+    padding-top: 10px;
+    border-top: 1px solid #e8edf5;
+}
+.info-sub-item {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+.info-sub-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: #7a8baa;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+}
+.info-sub-val {
+    font-size: 18px;
+    font-weight: 700;
+    color: #112444;
+}
+
+/* ── Update / Completion form – record preview panel ── */
+.ncr-preview-box {
+    background: #0d1c35;
+    border: 1px solid #2c7be5;
+    border-radius: 6px;
+    padding: 14px 16px;
+    margin-top: 6px;
+}
+.ncr-preview-label {
+    font-size: 11px;
+    font-weight: 700;
+    color: #7aaef5;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    margin: 0 0 10px;
+}
+.ncr-preview-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+}
+.ncr-preview-table td {
+    padding: 4px 8px;
+    color: #c8d8f0;
+    vertical-align: top;
+}
+.ncr-preview-table td:first-child {
+    font-weight: 700;
+    color: #1f8cf1;
+    width: 110px;
+    white-space: nowrap;
+}
+.ncr-preview-error {
+    color: #ff6b6b;
+    font-size: 13px;
+    margin: 4px 0 0;
+}
+
+/* ── Dashboard – filter bar ── */
+.filter-bar {
+    background: #ffffff;
+    border-radius: 12px;
+    padding: 20px 24px;
+    box-shadow: 0 1px 6px rgba(17, 36, 68, 0.08);
+    margin-bottom: 16px;
+}

@@ -1,284 +1,309 @@
 import streamlit as st
-import plotly.express as px
+import psycopg2
 import pandas as pd
-from data import *
-from datetime import timedelta
+import ast
+import re
+import datetime
+import base64
+from data import load_so_statii
 
-def clean_ncr_data(df):
-    # clean data massively
+DISPLAY_COLS = {
+    "id":                              "ID",
+    "name":                            "Reported By",
+    "customer":                        "Customer",
+    "customer_ncr_no":                 "Customer NCR No",
+    "original_sales_order":            "Original Sales Order",
+    "customer_po":                     "Customer PO",
+    "description":                     "Description",
+    "department":                      "Department",
+    "suggested_corrective_action":     "Suggested Corrective Action",
+    "corrective_action_delegated_to":  "Delegated To",
+    "returned_to_customer":            "Returned to Customer?",
+    "corrective_action_completed":     "Corrective Action Completed?",
+}
 
-    # parse dates
-    df["Date"] = pd.to_datetime(df["Date"], errors="coerce")
-    df["Date Complete"] = pd.to_datetime(df["Date Complete"], errors="coerce")
 
-    # Standardise Y/N columns
-    yn_cols = ["Returned to Customer", "Report Done"]
-    for col in yn_cols:
-        if col in df.columns:
-            df[col] = (
-                df[col]
-                .astype(str)
-                .str.strip()
-                .str.upper()
-                .replace({"Y": "Yes", "N": "No"})
-            )
+def _format_so(val):
+    if pd.isna(val) or not str(val).strip():
+        return val
+    digits = re.sub(r"[^0-9]", "", str(val))
+    return f"SO-{digits.zfill(6)}" if digits else val
 
-    # completion flag for suggeastive action implemented
-    df["Suggested Corrective Action Implemented"] = df["Date Complete"].notna().map(
-        {True: "Yes", False: "No"}
+
+def kpi_card(label, value, sub=None, accent=""):
+    sub_html = f'<div class="kpi-sub">{sub}</div>' if sub else ""
+    return f"""
+    <div class="kpi-card {accent}">
+        <div class="kpi-label">{label}</div>
+        <div class="kpi-value">{value}</div>
+        {sub_html}
+    </div>
+    """
+
+
+def get_connection():
+    return psycopg2.connect(st.secrets["NCRDB"]["DATABASE_PUBLIC_URL"])
+
+
+def load_ncr_data(conn):
+    df = pd.read_sql_query("SELECT * FROM ncr_log ORDER BY id DESC", conn)
+    df["department"] = df["department"].apply(
+        lambda x: ast.literal_eval(x) if isinstance(x, str) and x.strip() else []
     )
-    # fill missing data with 'Data Unknown' for str columns
-    for col in ['Non Conformance Received/Recorded By', 'Description', 'Department', 'Root Cause']:
-        df[col] = df[col].fillna("Data Unknown")
-
-    # tidy input (strip trailing spaces and standardise capitilasition)
-    cols_to_tidy = ["Customer", "Department", "Non Conformance Received/Recorded By"]
-    for col in cols_to_tidy:
-        df[col] = (
-            df[col].astype(str).str.strip().str.replace(r"\s+", " ", regex=True).str.title()
-        )
-
-    # log as internal (replacing null), "No Official NCR" (replacing n/a) or the customer NCR for "Customer NCR No column"
-    df["Customer NCR No."] = (
-        df["Customer NCR No."].replace("N/A", "No Official NCR No.").fillna("Internal")
+    df["corrective_action_delegated_to"] = df["corrective_action_delegated_to"].apply(
+        lambda x: ast.literal_eval(x) if isinstance(x, str) and x.strip() else []
     )
-
-    # sort companies being reported differently
-    df = apply_company_grouping(df)
-
-    # Create week column
-    df["Week"] = df["Date"].dt.to_period("W").dt.start_time
+    df["date"] = pd.to_datetime(df["date"], errors="coerce")
     return df
 
-def render_debug_data(df, date_filter):
-    st.markdown("### DEBUGGING ZONE")
-    # output raw counts of numbers
-    # total number of ncrs
-    date_filter = pd.to_datetime(date_filter)
-    date_filtered_df = df[df["Date"] >= date_filter]
-    st.markdown(f"NCRs from {date_filter}: {len(date_filtered_df.index)}")
 
-    # number by department
-    list_and_df("Department", date_filtered_df)
-    # number by customer
-    list_and_df("Customer", date_filtered_df)
-    # number by person recording ncr
-    list_and_df("Non Conformance Received/Recorded By", date_filtered_df)
-    # number that are internal
-    st.markdown(f"No. of Internal NCRS: {(date_filtered_df["Customer NCR No."] == "Internal").sum()}")
-    # number that are external
-    st.markdown(f"No. of External NCRS: {(date_filtered_df["Customer NCR No."] != "Internal").sum()}")
-    # number per standardised root cause
-    list_and_df("Root Cause", date_filtered_df)
-    # number per suggested corrective action completed
-    SCA_completed = len(date_filtered_df) - (date_filtered_df["Suggested Corrective Action Implemented"] == "Yes").sum()
-    SCA_percent = round((SCA_completed/len(date_filtered_df))*100,2)
-    st.markdown(f"Number of NCRS with suggested corrective action completed: {SCA_completed} ({SCA_percent}%)")
-    # number returned to customer
-    RTC_completed = len(date_filtered_df) - (date_filtered_df["Returned to Customer"]=="Yes").sum()
-    RTC_percent = round((RTC_completed/len(date_filtered_df))*100,2)
-    st.markdown(f"Number of NCRS returned to customer: {RTC_completed} ({RTC_percent}%)")
-    # number of reports done
-    report_done = len(date_filtered_df) - (date_filtered_df["Report Done"]=="Yes").sum()
-    report_percent = round((report_done/len(date_filtered_df))*100,2)
-    st.markdown(f"Number of NCRS with report completed: {report_done} ({report_percent}%)")
-
-def list_and_df(column, df):
-    unique_list = df[column].dropna().unique().tolist()
-    st.markdown(f"Unique {column} List: {unique_list}")
-    unique_df = (
-        df[column].value_counts().reset_index()
-    )
-    unique_df.columns = [column, "count"]
-    unique_df[f"% of total"] = (
-        (unique_df["count"] / len(df.index)) *100
-    )
-    st.dataframe(unique_df) 
-
-def render_df(df, col, header):
-    unique_df = (
-        df[header].value_counts().reset_index()
-    )
-    unique_df.columns = [header, "count"]
-    unique_df[f"% of total"] = (
-        round(((unique_df["count"] / len(df.index)) *100), 2)
-    )
-    col.dataframe(unique_df, hide_index=True) 
-
-def render_progress_bars(df, col):
-    # Suggested Corrective Action
-    SCA_completed = len(df) - (df["Suggested Corrective Action Implemented"] == "Yes").sum()
-    SCA_percent = round((SCA_completed/len(df)),2)
-    col.progress(float(SCA_percent), f"NCRS with suggested corrective action completed: {SCA_completed} ({SCA_percent*100}%)")
-    # Returned to Customer
-    RTC_completed = len(df) - (df["Returned to Customer"] == "Yes").sum()
-    RTC_percent = round((RTC_completed/len(df)),2)
-    col.progress(float(RTC_percent), f"NCRS returned to customer: {RTC_completed} ({RTC_percent*100}%)")
-    # Report Done
-    report_done = len(df) - (df["Report Done"] == "Yes").sum()
-    report_percent = round((report_done/len(df)),2)
-    col.progress(float(report_percent), f"NCRS with report completed: {int(report_done)} ({report_percent*100:.1f}%)")
-
-def render_internal_chart(df, col):
-    counts = df["Customer NCR No."].value_counts()
-
-    internal = counts.get("Internal", 0)
-    external = counts.sum() - internal
-
-    col.metric("Internal NCRs", internal)
-    col.metric("External NCRs", external)
-
-    pie_data = pd.DataFrame({
-        "Type": ["Internal", "External"],
-        "Count": [internal, external]
+def get_filter_options(df):
+    names = sorted([n for n in df["name"].dropna().unique() if str(n).strip()])
+    customers = sorted([c for c in df["customer"].dropna().unique() if str(c).strip()])
+    departments = sorted({
+        d.strip()
+        for sublist in df["department"]
+        for d in sublist
+        if d and str(d).strip()
     })
+    delegated = sorted({
+        p.strip()
+        for sublist in df["corrective_action_delegated_to"]
+        for p in sublist
+        if p and str(p).strip()
+    })
+    return names, customers, departments, delegated
 
 
-    # Pie chart for proportion
-    fig = px.pie(
-        pie_data, names="Type", values="Count", hole=0.4, color="Type",
-        color_discrete_map={"Internal": "#2ecc71", "External": "#3498db"}
-    )
-    col.plotly_chart(fig, use_container_width=False)
+def render_date_filter():
+    col1, _ = st.columns([1, 4])
+    with col1:
+        date_filter = st.date_input("Show data from:", value=datetime.datetime(2025, 1, 1))
+    return pd.to_datetime(date_filter)
 
-def render_sales_order_impact(df, so_df, date_filter, col):
-    # read in all sales orders since date that is filtered from statii
-    # done reading from a hardcoded CSV file, will upgrade to be an API call when we get that functionality from statii
-    # have to do a dump out and save to NCR Log/ALL SALES ORDERS.csv on sharepoint
-    # filter so_df by date filter
-    date_filter = pd.to_datetime(date_filter)
-    so_df["Date Required"] = pd.to_datetime(so_df["Date Required"], format="mixed")
-    so_df = so_df[so_df["Date Required"] >= date_filter]
-    # st.dataframe(so_df) # debug
 
-    # make sure SO list is unqiue
-    so_df["S.O. No."].dropna().unique()
-    sos_affected = (
-        df["Original sales Order"].dropna().astype(str).str.strip()
-    )
-    sos_affected = sos_affected[~sos_affected.str.upper().isin(["N/A", "NA", "NONE", ""])]
-    sos_affected = sos_affected.unique()
+def render_page_header(date_filter):
+    logo_b64 = base64.b64encode(open("assets/logo.jpg", "rb").read()).decode()
+    st.markdown(f"""
+    <div class="page-header">
+        <div style="display:flex;align-items:center;gap:1rem;">
+            <div style="background:#fff;border-radius:8px;padding:6px 10px;display:flex;align-items:center;">
+                <img src="data:image/jpeg;base64,{logo_b64}" style="height:48px;object-fit:contain;" />
+            </div>
+            <div>
+                <h1 style="margin:0;">NCR Log Dashboard</h1>
+                <p style="margin:0;">Non-Conformance Report tracking — data from {date_filter.strftime("%d %B %Y")} onwards</p>
+            </div>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
 
-    num_so = len(so_df)
-    num_ncr = len(df)
-    num_affected = len(sos_affected)
 
-    date_display = date_filter.strftime('%d %b %Y')
-
-    # visualise data
-    col.metric(f"Total Number of NCRs since {date_display}:", num_ncr)
-    col.metric(f"Number of NCRS with SO attached:", num_affected)
-    col.metric(f"Total Number of SOs since {date_display}:", num_so)
-    col.metric(f"Affected SOs %:", round(((num_affected/num_so)*100),2))
-
-    # weekly comparison
-    today = pd.Timestamp.today()
-    this_week_start = today - pd.Timedelta(days=today.weekday())  # floor to Monday
-    last_week_start = this_week_start - pd.Timedelta(weeks=1)
-
-    this_week = len(df[df["Week"] == this_week_start.normalize()])
-    last_week = len(df[df["Week"] == last_week_start.normalize()])
-    delta = this_week - last_week
-
-    col.metric(
-        "NCRs Logged This Week",
-        this_week,
-        delta=f"{delta:+d} vs last week ({last_week})",
-        delta_color="inverse"
-    )
-
-import re
-
-def normalise_so(raw):
-    """Strip 'SO-0' prefix down to the numeric part, zero-padded to 6 digits."""
-    raw = str(raw).strip().upper()
-    raw = re.sub(r'^SO-0*', '', raw)  # remove SO-0 prefix if present
-    raw = raw.zfill(6)                # zero-pad to 6 digits
-    return raw
-
-def split_multi_so(raw):
-    """Split cells containing multiple SO numbers (e.g. '23665 & 23541') into a list."""
-    parts = re.split(r'[&+,;/]+', str(raw))
-    return [p.strip() for p in parts if p.strip()]
-
-def calculate_weekly_impact(df, so_df):
-    df = df.copy()
-    so_df = so_df.copy()
-
-    df["Date"] = pd.to_datetime(df["Date"])
-    so_df["Date Required"] = pd.to_datetime(so_df["Date Required"], format="mixed", dayfirst=True)
-
-    # Normalise SO key in so_df
-    so_df["SO_key"] = so_df["S.O. No."].astype(str).apply(normalise_so)
-
-    # Deduplicate - one row per SO using earliest Date Required
-    so_deduped = (
-        so_df.sort_values("Date Required")
-        .drop_duplicates(subset="SO_key", keep="first")
-    )
-    so_deduped["Week"] = so_deduped["Date Required"].dt.to_period("W").dt.start_time
-
-    # Weekly total SOs
-    weekly_so = so_deduped.groupby("Week")["SO_key"].nunique().reset_index(name="Total SOs")
-
-    # Build lookup: SO_key -> Week
-    so_week_lookup = so_deduped.set_index("SO_key")["Week"]
-
-    # Get affected NCRs
-    affected = df[
-        df["Original sales Order"].notna() &
-        ~df["Original sales Order"].astype(str).str.strip().str.upper().isin(["N/A", "NA", "NONE", "NAN", ""])
-    ].copy()
-
-    # Explode multi-SO entries into one row per SO
-    affected["SO_list"] = affected["Original sales Order"].apply(split_multi_so)
-    affected = affected.explode("SO_list")
-    affected["SO_key"] = affected["SO_list"].apply(normalise_so)
-
-    # Map week from SO lookup; fall back to NCR Date if SO not found
-    affected["Week"] = affected["SO_key"].map(so_week_lookup)
-    affected["Week"] = affected["Week"].fillna(
-        affected["Date"].dt.to_period("W").dt.start_time
-    )
-
-    # Weekly affected SOs (unique SOs per week)
-    weekly_affected = (
-        affected.groupby("Week")["SO_key"]
-        .nunique()
-        .reset_index(name="Affected SOs")
-    )
-
-    # Merge and calculate %
-    weekly = weekly_so.merge(weekly_affected, on="Week", how="left").fillna(0)
-    weekly["Affected %"] = (weekly["Affected SOs"] / weekly["Total SOs"]) * 100
-
-    return weekly
-
-def render_impact_chart(weekly, date_filter, col):
-    weekly = weekly[weekly["Week"] >= date_filter]
-    # filter to only show chart up to latest NCR
-    last_week_with_value = weekly.loc[weekly["Affected %"] > 0, "Week"].max()
-    if pd.isna(last_week_with_value):
-        col.write("No affected SOs to display.")
+def render_kpi_section(df):
+    num_ncrs = len(df)
+    if num_ncrs == 0:
+        st.warning("No NCRs found for the selected date range.")
         return
-    max_show_week = last_week_with_value + timedelta(weeks=2)
-    weekly_filtered = weekly[weekly["Week"] <= max_show_week]
 
-    fig = px.line(
-        weekly_filtered,
-        x="Week",
-        y="Affected %",
-        markers=True
+    counts   = df["customer_ncr_no"].value_counts()
+    internal = int(counts.get("Internal", 0))
+    external = num_ncrs - internal
+
+    st.markdown('<div class="section-heading">Overview</div>', unsafe_allow_html=True)
+    c1, c2, c3 = st.columns(3)
+    c1.markdown(kpi_card("Total NCRs Logged", num_ncrs), unsafe_allow_html=True)
+    c2.markdown(kpi_card(
+        "Internal NCRs", internal,
+        sub=f"{round(internal / num_ncrs * 100, 1)}% of total",
+        accent="accent-orange"
+    ), unsafe_allow_html=True)
+    c3.markdown(kpi_card(
+        "External NCRs", external,
+        sub=f"{round(external / num_ncrs * 100, 1)}% of total",
+        accent="accent-green"
+    ), unsafe_allow_html=True)
+
+
+def render_breakdown_section(df, customers, departments):
+    num_ncrs = len(df)
+    if num_ncrs == 0:
+        return
+
+    st.markdown('<div class="section-heading">Breakdown</div>', unsafe_allow_html=True)
+    c1, c2, c3 = st.columns(3)
+
+    with c1:
+        customer_sel = st.selectbox("By Customer", options=customers, key="sel_customer")
+        count = len(df[df["customer"] == customer_sel])
+        st.markdown(f'<div class="stat-result"><span>{count} NCRs</span> — {round(count / num_ncrs * 100, 1)}% of total</div>', unsafe_allow_html=True)
+
+    with c2:
+        dept_sel = st.selectbox("By Department", options=departments, key="sel_dept")
+        count = len(df[df["department"].apply(lambda x: dept_sel in x)])
+        st.markdown(f'<div class="stat-result"><span>{count} NCRs</span> — {round(count / num_ncrs * 100, 1)}% of total</div>', unsafe_allow_html=True)
+
+    with c3:
+        cause_sel = st.selectbox("By Root Cause", options=df["root_cause"].dropna().unique(), key="sel_cause")
+        count = len(df[df["root_cause"] == cause_sel])
+        st.markdown(f'<div class="stat-result"><span>{count} NCRs</span> — {round(count / num_ncrs * 100, 1)}% of total</div>', unsafe_allow_html=True)
+
+
+def render_so_and_weekly(df, date_filter):
+    num_ncrs = len(df[df["customer_ncr_no"] != "Internal"])
+    if num_ncrs == 0:
+        return
+
+    all_so = load_so_statii()
+    all_so = all_so.rename(columns={"date_required": "Date Required"})
+    all_so["Date Required"] = pd.to_datetime(all_so["Date Required"], format="mixed")
+
+    today          = pd.Timestamp.today().normalize()
+    month_ago      = today - pd.Timedelta(days=30)
+    six_months_ago = today - pd.Timedelta(days=182)
+
+    so_since  = all_so[all_so["Date Required"] >= date_filter]
+    so_pct    = round(num_ncrs / len(so_since) * 100, 1) if len(so_since) else 0
+
+    so_1m     = all_so[all_so["Date Required"] >= month_ago]
+    ncr_1m    = df[df["date"] >= month_ago]
+    so_pct_1m = round(len(ncr_1m) / len(so_1m) * 100, 1) if len(so_1m) else 0
+
+    show_6m = date_filter <= six_months_ago
+    if show_6m:
+        so_6m        = all_so[all_so["Date Required"] >= six_months_ago]
+        ncr_6m       = df[df["date"] >= six_months_ago]
+        so_pct_6m    = round(len(ncr_6m) / len(so_6m) * 100, 1) if len(so_6m) else 0
+        ncr_6m_count = int(len(ncr_6m))
+        six_month_so_html = f"""
+            <div class="info-sub-item">
+                <span class="info-sub-label">Last 6 months</span>
+                <span class="info-sub-val">{so_pct_6m}%</span>
+            </div>"""
+        six_month_ncr_html = f"""
+            <div class="info-sub-item">
+                <span class="info-sub-label">Last 6 months</span>
+                <span class="info-sub-val">{ncr_6m_count}</span>
+            </div>"""
+    else:
+        six_month_so_html = six_month_ncr_html = ""
+
+    this_week_start = (today - pd.Timedelta(days=today.weekday())).normalize()
+    last_week_start = this_week_start - pd.Timedelta(weeks=1)
+    week_df         = df.copy()
+    week_df["Week"] = week_df["date"].dt.to_period("W").dt.start_time
+    this_week       = int(len(week_df[week_df["Week"] == this_week_start]))
+    last_week       = int(len(week_df[week_df["Week"] == last_week_start]))
+    delta           = this_week - last_week
+    arrow           = "▲" if delta > 0 else "▼" if delta < 0 else "─"
+    delta_label     = f"{arrow} {abs(delta)} vs last week ({last_week})"
+    ncr_30d         = int(len(df[df["date"] >= month_ago]))
+
+    st.markdown('<div class="section-heading">Activity</div>', unsafe_allow_html=True)
+    c1, c2 = st.columns(2)
+    c1.markdown(f"""
+    <div class="info-card">
+        Sales orders affected
+        <span class="info-value">{so_pct}%</span>
+        <span class="info-delta">since {date_filter.strftime("%d %b %Y")}</span>
+        <div class="info-sub-stats">
+            <div class="info-sub-item">
+                <span class="info-sub-label">Last 30 days</span>
+                <span class="info-sub-val">{so_pct_1m}%</span>
+            </div>{six_month_so_html}
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+    c2.markdown(f"""
+    <div class="info-card">
+        NCRs logged this week
+        <span class="info-value">{this_week}</span>
+        <span class="info-delta">{delta_label}</span>
+        <div class="info-sub-stats">
+            <div class="info-sub-item">
+                <span class="info-sub-label">Last 30 days</span>
+                <span class="info-sub-val">{ncr_30d}</span>
+            </div>{six_month_ncr_html}
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+
+def render_completion_stats(df):
+    total = len(df)
+    if total == 0:
+        return
+
+    st.markdown('<div class="section-heading">Completion Status</div>', unsafe_allow_html=True)
+
+    sca_done = int((df["corrective_action_completed"] == "Yes").sum())
+    sca_pct  = round(sca_done / total, 2)
+    st.progress(sca_pct, f"Corrective action completed: {sca_done} of {total} ({int(sca_pct * 100)}%)")
+
+    rtc_done = int((df["returned_to_customer"] == "Yes").sum())
+    rtc_pct  = round(rtc_done / total, 2)
+    st.progress(rtc_pct, f"Returned to customer: {rtc_done} of {total} ({int(rtc_pct * 100)}%)")
+
+
+def render_ncr_table(df, conn, names, customers, departments, delegated):
+    st.markdown('<div class="section-heading">Full NCR Log</div>', unsafe_allow_html=True)
+    st.caption("Click any cell to edit inline, then press Save Changes to write to the database.")
+
+    if any(len(s) == 0 for s in df["department"]):
+        departments = ["Unassigned"] + departments
+    if any(len(s) == 0 for s in df["corrective_action_delegated_to"]):
+        delegated = ["Unassigned"] + delegated
+
+    fc1, fc2, fc3, fc4 = st.columns(4)
+    selected_names       = fc1.multiselect("Reported By",  options=names,        default=names)
+    selected_departments = fc2.multiselect("Department",   options=departments,  default=departments)
+    selected_delegated   = fc3.multiselect("Delegated To", options=delegated,    default=delegated)
+    selected_customers   = fc4.multiselect("Customer",     options=customers,    default=customers)
+
+    mask = (
+        (df["name"].isin(selected_names) if selected_names else True)
+        & (df["customer"].isin(selected_customers) if selected_customers else True)
+        & df["corrective_action_delegated_to"].apply(
+            lambda people: (
+                not selected_delegated
+                or ("Unassigned" in selected_delegated and not people)
+                or any(p in selected_delegated for p in people)
+            )
+        )
+        & df["department"].apply(
+            lambda depts: (
+                not selected_departments
+                or ("Unassigned" in selected_departments and not depts)
+                or any(d in selected_departments for d in depts)
+            )
+        )
     )
 
-    fig.update_traces(
-        line=dict(color="red", width=3),
-        marker=dict(size=8, color="red")
-    )
+    filtered_df = df[mask].copy()
+    filtered_df["original_sales_order"] = filtered_df["original_sales_order"].apply(_format_so)
 
-    fig.update_layout(
-        yaxis_title="Affected SO %",
-        xaxis_title="Week",
-    )
+    display_df = filtered_df[list(DISPLAY_COLS.keys())].rename(columns=DISPLAY_COLS)
+    st.caption(f"{len(display_df)} records shown")
+    edited_display = st.data_editor(display_df, use_container_width=True, hide_index=True)
 
-    col.plotly_chart(fig, use_container_width=True)
+    col1, col2, _ = st.columns([1, 1, 5])
+    with col1:
+        if st.button("💾 Save Changes"):
+            reverse_map = {v: k for k, v in DISPLAY_COLS.items()}
+            edited_orig = edited_display.rename(columns=reverse_map).set_index("id")
+            cur = conn.cursor()
+            editable_cols = [c for c in edited_orig.columns if c != "id"]
+            for row_id, row in edited_orig.iterrows():
+                for col in editable_cols:
+                    val = row[col]
+                    if isinstance(val, list):
+                        val = str(val)
+                    cur.execute(
+                        f'UPDATE ncr_log SET "{col}" = %s WHERE id = %s',
+                        (val, row_id),
+                    )
+            conn.commit()
+            st.success("Database updated successfully.")
+    with col2:
+        if st.button("🔄 Refresh"):
+            st.cache_data.clear()
+            st.rerun()
