@@ -831,7 +831,7 @@ def page_setup(title):
     from login import require_auth
     require_auth()
 
-    st.set_page_config(layout="wide")
+    st.set_page_config(layout="wide", page_title="JMS Data Visualiser")
     load_css("stylesheet.css")
 
     tcol1, tcol2 = st.columns([1, 4])
