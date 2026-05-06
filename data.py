@@ -564,6 +564,8 @@ def remove_completed_jobs_statii(df, resource):
     return df[~df["Number"].astype(str).isin(completed_numbers)]
 
 def format_hours(hours):
+    if hours != hours:  # NaN check
+        return "NO DATA"
     h = int(hours)
     m = int(round((hours - h) * 60))
     return f"{h}h {m}m"
