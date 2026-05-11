@@ -1,7 +1,7 @@
 import streamlit as st
 import psycopg2
 import pandas as pd
-import ast
+import json
 import re
 import datetime
 import base64
@@ -9,20 +9,24 @@ import plotly.express as px
 from data import load_so_statii
 
 DISPLAY_COLS = {
-    "id":                              "ID",
-    "name":                            "Reported By",
-    "customer":                        "Customer",
-    "customer_ncr_no":                 "Customer NCR No",
-    "original_sales_order":            "Original Sales Order",
-    "customer_po":                     "Customer PO",
-    "date":                            "Date Recorded",
-    "description":                     "Description",
-    "department":                      "Department",
-    "suggested_corrective_action":     "Suggested Corrective Action",
-    "corrective_action_delegated_to":  "Delegated To",
-    "returned_to_customer":            "Returned to Customer?",
-    "corrective_action_completed":     "Corrective Action Completed?",
+    "id":                          "ID",
+    "name":                        "Reported By",
+    "customer":                    "Customer",
+    "customer_ncr_no":             "Customer NCR No",
+    "original_sales_order":        "Original Sales Order",
+    "customer_po":                 "Customer PO",
+    "date":                        "Date Recorded",
+    "description":                 "Description",
+    "department":                  "Department",
+    "root_cause":                  "Root Cause(s)",
+    "corrective_action":           "Corrective Action(s)",
+    "delegated_to":                "Delegated To",
+    "returned_to_customer":        "Returned to Customer?",
+    "corrective_action_completed": "Corrective Action Completed?",
 }
+
+# Columns sourced from causal_factors — read-only in the inline editor
+CF_DISPLAY_COLS = {"department", "root_cause", "corrective_action", "delegated_to"}
 
 
 def _format_so(val):
@@ -47,14 +51,61 @@ def get_connection():
     return psycopg2.connect(st.secrets["NCRDB"]["DATABASE_PUBLIC_URL"])
 
 
+def _parse_json_list(val):
+    if isinstance(val, list):
+        return val
+    try:
+        result = json.loads(val or '[]')
+        return result if isinstance(result, list) else []
+    except Exception:
+        return []
+
+
 def load_ncr_data(conn):
     df = pd.read_sql_query("SELECT * FROM ncr_log ORDER BY id DESC", conn)
-    df["department"] = df["department"].apply(
-        lambda x: ast.literal_eval(x) if isinstance(x, str) and x.strip() else []
-    )
-    df["corrective_action_delegated_to"] = df["corrective_action_delegated_to"].apply(
-        lambda x: ast.literal_eval(x) if isinstance(x, str) and x.strip() else []
-    )
+
+    # Drop legacy causal-factor columns if still present
+    df = df.drop(columns=[
+        "department", "root_cause", "suggested_corrective_action",
+        "corrective_action_delegated_to", "corrective_action_due_date",
+    ], errors="ignore")
+
+    cf = pd.read_sql_query("SELECT * FROM causal_factors", conn)
+
+    if cf.empty:
+        df["department"]        = [[] for _ in range(len(df))]
+        df["delegated_to"]      = [[] for _ in range(len(df))]
+        df["root_cause_list"]   = [[] for _ in range(len(df))]
+        df["root_cause"]        = ""
+        df["corrective_action"] = ""
+    else:
+        cf["department"]   = cf["department"].apply(_parse_json_list)
+        cf["delegated_to"] = cf["delegated_to"].apply(_parse_json_list)
+
+        def agg(group):
+            all_dept = list(dict.fromkeys(d for depts in group["department"] for d in depts))
+            all_del  = list(dict.fromkeys(p for ppl   in group["delegated_to"] for p in ppl))
+            rc_list  = [r for r in group["root_cause"].dropna() if str(r).strip()]
+            ca_list  = [c for c in group["corrective_action"].dropna() if str(c).strip()]
+            return pd.Series({
+                "_dept":    all_dept,
+                "_del":     all_del,
+                "_rc_list": rc_list,
+                "_rc_str":  ", ".join(rc_list),
+                "_ca_str":  " | ".join(ca_list),
+            })
+
+        grouped = cf.groupby("ncr_id").apply(agg).reset_index()
+        df = df.merge(grouped, left_on="id", right_on="ncr_id", how="left")
+
+        df["department"]        = df["_dept"].apply(    lambda x: x if isinstance(x, list) else [])
+        df["delegated_to"]      = df["_del"].apply(     lambda x: x if isinstance(x, list) else [])
+        df["root_cause_list"]   = df["_rc_list"].apply( lambda x: x if isinstance(x, list) else [])
+        df["root_cause"]        = df["_rc_str"].fillna("")
+        df["corrective_action"] = df["_ca_str"].fillna("")
+
+        df = df.drop(columns=["ncr_id", "_dept", "_del", "_rc_list", "_rc_str", "_ca_str"], errors="ignore")
+
     df["date"] = pd.to_datetime(df["date"], errors="coerce")
     return df
 
@@ -70,7 +121,7 @@ def get_filter_options(df):
     })
     delegated = sorted({
         p.strip()
-        for sublist in df["corrective_action_delegated_to"]
+        for sublist in df["delegated_to"]
         for p in sublist
         if p and str(p).strip()
     })
@@ -145,8 +196,9 @@ def render_breakdown_section(df, customers, departments):
         st.markdown(f'<div class="stat-result"><span>{count} NCRs</span> — {round(count / num_ncrs * 100, 1)}% of total</div>', unsafe_allow_html=True)
 
     with c3:
-        cause_sel = st.selectbox("By Root Cause", options=df["root_cause"].dropna().unique(), key="sel_cause")
-        count = len(df[df["root_cause"] == cause_sel])
+        cause_options = sorted({rc for rcs in df["root_cause_list"] for rc in rcs if rc and str(rc).strip()})
+        cause_sel = st.selectbox("By Root Cause", options=cause_options or ["—"], key="sel_cause")
+        count = len(df[df["root_cause_list"].apply(lambda x: cause_sel in x)])
         st.markdown(f'<div class="stat-result"><span>{count} NCRs</span> — {round(count / num_ncrs * 100, 1)}% of total</div>', unsafe_allow_html=True)
 
 
@@ -307,19 +359,19 @@ def render_ncr_table(df, conn, names, customers, departments, delegated):
 
     if any(len(s) == 0 for s in df["department"]):
         departments = ["Unassigned"] + departments
-    if any(len(s) == 0 for s in df["corrective_action_delegated_to"]):
+    if any(len(s) == 0 for s in df["delegated_to"]):
         delegated = ["Unassigned"] + delegated
 
     fc1, fc2, fc3, fc4 = st.columns(4)
-    selected_names       = fc1.multiselect("Reported By",  options=names,        default=names)
-    selected_departments = fc2.multiselect("Department",   options=departments,  default=departments)
-    selected_delegated   = fc3.multiselect("Delegated To", options=delegated,    default=delegated)
-    selected_customers   = fc4.multiselect("Customer",     options=customers,    default=customers)
+    selected_names       = fc1.multiselect("Reported By",  options=names,       default=names)
+    selected_departments = fc2.multiselect("Department",   options=departments, default=departments)
+    selected_delegated   = fc3.multiselect("Delegated To", options=delegated,   default=delegated)
+    selected_customers   = fc4.multiselect("Customer",     options=customers,   default=customers)
 
     mask = (
         (df["name"].isin(selected_names) if selected_names else True)
         & (df["customer"].isin(selected_customers) if selected_customers else True)
-        & df["corrective_action_delegated_to"].apply(
+        & df["delegated_to"].apply(
             lambda people: (
                 not selected_delegated
                 or ("Unassigned" in selected_delegated and not people)
@@ -338,9 +390,19 @@ def render_ncr_table(df, conn, names, customers, departments, delegated):
     filtered_df = df[mask].copy()
     filtered_df["original_sales_order"] = filtered_df["original_sales_order"].apply(_format_so)
 
-    display_df = filtered_df[list(DISPLAY_COLS.keys())].rename(columns=DISPLAY_COLS)
+    # Flatten list columns to comma-joined strings for display
+    for col in ("department", "delegated_to"):
+        filtered_df[col] = filtered_df[col].apply(
+            lambda x: ", ".join(x) if isinstance(x, list) else (x or "")
+        )
+
+    display_cols_present = [c for c in DISPLAY_COLS if c in filtered_df.columns]
+    display_df = filtered_df[display_cols_present].rename(columns=DISPLAY_COLS)
     st.caption(f"{len(display_df)} records shown")
-    edited_display = st.data_editor(display_df, use_container_width=True, hide_index=True)
+
+    cf_display_renamed = {DISPLAY_COLS[c] for c in CF_DISPLAY_COLS if c in DISPLAY_COLS}
+    column_config = {col: st.column_config.TextColumn(disabled=True) for col in cf_display_renamed}
+    edited_display = st.data_editor(display_df, use_container_width=True, hide_index=True, column_config=column_config)
 
     col1, col2, _ = st.columns([1, 1, 5])
     with col1:
@@ -348,7 +410,7 @@ def render_ncr_table(df, conn, names, customers, departments, delegated):
             reverse_map = {v: k for k, v in DISPLAY_COLS.items()}
             edited_orig = edited_display.rename(columns=reverse_map).set_index("id")
             cur = conn.cursor()
-            editable_cols = [c for c in edited_orig.columns if c != "id"]
+            editable_cols = [c for c in edited_orig.columns if c != "id" and c not in CF_DISPLAY_COLS]
             for row_id, row in edited_orig.iterrows():
                 for col in editable_cols:
                     val = row[col]
