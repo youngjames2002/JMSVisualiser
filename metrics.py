@@ -28,12 +28,12 @@ def bar_chart_hours_by_date(df):
     df = df.copy()
 
     # Create Late flag
-    df["Is Late"] = df["Earliest Process Date"] < today
+    df["Is Late"] = df["Date"] < today
 
     # Group by actual date
     summary = (
         df
-        .groupby(["Earliest Process Date", "Is Late"])
+        .groupby(["Date", "Is Late"])
         .agg({
             "Estimated Bundle Time (Hours)": "sum",
             "Estimated Fold Time (Hours)": "sum"

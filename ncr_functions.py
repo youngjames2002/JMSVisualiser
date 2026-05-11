@@ -5,6 +5,7 @@ import ast
 import re
 import datetime
 import base64
+import plotly.express as px
 from data import load_so_statii
 
 DISPLAY_COLS = {
@@ -226,6 +227,53 @@ def render_so_and_weekly(df, date_filter):
         </div>
     </div>
     """, unsafe_allow_html=True)
+
+    ncr_graph(df, all_so)
+
+def ncr_graph(df, all_so=None):
+    st.markdown('<div class="section-heading">Trends</div>', unsafe_allow_html=True)
+    dated = df.dropna(subset=["date"]).copy()
+    daily = dated.groupby(dated["date"].dt.date).size().reset_index(name="count")
+    daily["date"] = pd.to_datetime(daily["date"])
+    daily = daily.sort_values("date")
+    daily["cumulative"] = daily["count"].cumsum()
+
+    fig_cumulative = px.line(
+        daily, x="date", y="cumulative",
+        markers=True,
+        labels={"date": "Date", "cumulative": "Total NCRs"},
+        title="Cumulative NCRs Over Time",
+    )
+    fig_cumulative.update_traces(line_color="#e05c2a")
+    fig_cumulative.update_layout(margin=dict(t=40, b=20, l=20, r=20))
+
+    if all_so is not None:
+        external = dated[dated["customer_ncr_no"] != "Internal"].copy()
+        external["month"] = external["date"].dt.to_period("M").dt.to_timestamp()
+        ncr_monthly = external.groupby("month").size().reset_index(name="ncr_count")
+
+        so = all_so.copy()
+        so["month"] = so["Date Required"].dt.to_period("M").dt.to_timestamp()
+        so_monthly = so.groupby("month").size().reset_index(name="so_count")
+
+        merged = pd.merge(ncr_monthly, so_monthly, on="month", how="inner")
+        merged["pct"] = (merged["ncr_count"] / merged["so_count"] * 100).round(1)
+
+        fig_pct = px.line(
+            merged, x="month", y="pct",
+            markers=True,
+            labels={"month": "Month", "pct": "% SOs Affected"},
+            title="% Sales Orders Affected per Month",
+        )
+        fig_pct.update_traces(line_color="#2a7ae0")
+        fig_pct.update_layout(margin=dict(t=40, b=20, l=20, r=20))
+
+        c1, c2 = st.columns(2)
+        c2.plotly_chart(fig_cumulative, use_container_width=True)
+        c1.plotly_chart(fig_pct, use_container_width=True)
+    else:
+        st.plotly_chart(fig_cumulative, use_container_width=True)
+
 
 
 def render_completion_stats(df):

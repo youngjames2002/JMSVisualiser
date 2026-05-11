@@ -382,6 +382,14 @@ button:hover {
     margin: 4px 0 0;
 }
 
+/* ── Dashboard – chart card wrapper ── */
+[data-testid="stPlotlyChart"] {
+    background: #ffffff;
+    border-radius: 12px;
+    box-shadow: 0 1px 6px rgba(17, 36, 68, 0.09);
+    padding: 8px 12px 4px;
+}
+
 /* ── Dashboard – filter bar ── */
 .filter-bar {
     background: #ffffff;
