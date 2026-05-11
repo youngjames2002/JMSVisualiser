@@ -662,6 +662,20 @@ def render_weld_chart(plot_df, y_max):
     fig.update_layout(**_weekly_bar_layout(y_max))
     st.plotly_chart(fig, use_container_width=True)
 
+def render_galv_chart(plot_df, y_max):
+    this_week = _this_week_label()
+    plot_df["colour"] = "green"
+
+    fig = go.Figure()
+    fig.add_trace(go.Bar(
+        x=plot_df["Week Label"], y=plot_df["Price"],
+        text=plot_df["Price"].round(0), textposition="outside",
+        hovertemplate="<b>%{x}</b><br>%{y} hours<extra></extra>",
+        marker=dict(color=plot_df["colour"], line=dict(width=0))
+    ))
+    fig.update_layout(**_weekly_bar_layout(y_max))
+    st.plotly_chart(fig, use_container_width=True)
+
 
 def render_bar_chart(melted, column):
     fig = px.bar(melted, x="Display Date", y="Hours", color="Colour Group",

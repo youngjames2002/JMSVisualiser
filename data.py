@@ -31,6 +31,7 @@ def statii_paint_data():
     response.raise_for_status()
     data = response.json()["ResponseBody"]["data"]
     return data
+    
 
 @st.cache_data(show_spinner=True)
 def statii_completed_jobs():
@@ -56,6 +57,38 @@ def clean_paint_data_from_api(api_response: dict) -> pd.DataFrame:
     df = df[~df["customer"].str.contains("Bamford|Wright|Cunningham", case=False, na=False)] 
     # Filter for paint-related specifications
     df = df[df["specification"].str.contains(r"\bRAL\b|\bprime\b|\bpaint\b|\bpainted\b|\bprimed\b|\brl\b|\bbs\b", case=False, na=False)]
+
+    # Date handling — API returns ISO 8601 so no dayfirst needed
+    df["date_promised"] = pd.to_datetime(df["date_promised"], errors="coerce")
+    df = df.dropna(subset=["date_promised"])
+    df["date_promised"] = df["date_promised"] - pd.Timedelta(days=2)
+    df["Week Due"] = df["date_promised"].dt.to_period("W-FRI").apply(lambda r: r.end_time)
+    current_week = pd.Timestamp.today().to_period("W-FRI").end_time
+    df = df[df["Week Due"] >= current_week]
+    df["Week Label"] = df["Week Due"].dt.strftime("%d %b")
+    df = df.sort_values("Week Due", ascending=True)
+
+    df = df.rename(columns={
+        "number": "Line No",
+        "customer": "Customer",
+        "specification": "Specification",
+        "price": "Price",
+        "date_promised": "Date Promised",
+        "description" : "Description"
+    })
+
+    df["Price"] = pd.to_numeric(df["Price"], errors="coerce").fillna(0.0)
+
+    return df[["Line No", "Customer", "Specification", "Description", "Price", "Date Promised", "Week Due", "Week Label"]]
+
+def clean_galv_data(api_response: dict) -> pd.DataFrame:
+    df = pd.DataFrame(api_response["rows"], columns=api_response["columns"])
+
+    # Filter out non-painted customers
+    # this customer filter can defo be done on the API call to reduce the amount of records pulled
+    df = df[~df["customer"].str.contains("Bamford|Wright|Cunningham", case=False, na=False)] 
+    # Filter for paint-related specifications
+    df = df[df["specification"].str.contains("Galv", case=False, na=False)]
 
     # Date handling — API returns ISO 8601 so no dayfirst needed
     df["date_promised"] = pd.to_datetime(df["date_promised"], errors="coerce")
