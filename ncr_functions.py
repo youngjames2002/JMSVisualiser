@@ -104,7 +104,7 @@ def load_ncr_data(conn):
 
         df = df.drop(columns=["ncr_id", "_dept", "_del", "_rc_list", "_rc_str", "_ca_str"], errors="ignore")
 
-    df["date"] = pd.to_datetime(df["date"], errors="coerce")
+    df['date'] = pd.to_datetime(df['date'].astype(str), errors='coerce', format='mixed')
     return df
 
 
