@@ -35,7 +35,13 @@ weekly = build_paint_plot_data(daily_view, df)
 weekly.loc[weekly["Price"] >= close_call, "colour"] = "orange"
 weekly.loc[weekly["Price"] > capacity, "colour"] = "red"
 
-render_paint_chart(weekly, "Day" if daily_view else "Week Ending", capacity)
+render_weekly_bar_chart(
+    weekly, "Week Label", "Price",
+    color="colour", highlight_week=False,
+    capacity=capacity, show_75_line=False,
+    y_title="Paint Value (£)", x_title="Day" if daily_view else "Week Ending",
+    text_format="currency",
+)
 
 if not daily_view:
     render_paint_next_week(weekly, capacity)

@@ -531,149 +531,82 @@ def render_logo(col):
     col.image(logo, width=500)
 
 
-def render_paint_chart(weekly, xlabel, capacity):
-    fig = go.Figure()
-
-    fig.add_trace(go.Bar(
-        x=weekly["Week Label"],
-        y=weekly["Price"],
-        marker=dict(
-            color=weekly["colour"],
-            line=dict(width=0)
-        ),
-        name="Paint Capacity Over Time",
-        text=weekly["Price"],
-        texttemplate="£%{text:,.0f}",
-        textposition="outside"
-    ))
-
-    fig.add_hline(
-        y=capacity,
-        line=dict(color="red", width=4, dash="dash"),
-        annotation_text=f"<b>Capacity £{capacity:,.0f}</b>",
-        annotation_position="top right"
-    )
-
-    fig.update_layout(
-        height=500,
-        margin=dict(l=40, r=40, t=30, b=40),
-        plot_bgcolor="rgba(0,0,0,0)",
-        paper_bgcolor="rgba(0,0,0,0)",
-
-        yaxis=dict(
-            title="Paint Value (£)",
-            gridcolor="rgba(0,0,0,0.05)",
-            zeroline=False
-        ),
-
-        xaxis=dict(
-            title=xlabel,
-            showgrid=False
-        ),
-
-        showlegend=False,
-
-        font=dict(
-            family="Segoe UI, sans-serif",
-            size=13,
-            color="#1a1a1a"
-        )
-    )
-
-    st.plotly_chart(fig, use_container_width=True)
-
 def _this_week_label():
     today = pd.Timestamp.today().normalize()
     return (today + pd.offsets.Week(weekday=4)).strftime("%d %b")
 
 
-def _apply_weekly_colours(weekly, hours_col, capacity):
-    """Add 'colour' (current week highlight) and 'capacity_colour' (over-capacity border) columns."""
-    this_week = _this_week_label()
-    weekly["colour"] = weekly["Week Label"].apply(lambda x: "#FFC300" if x == this_week else "#2E86C1")
-    weekly["capacity_colour"] = np.select(
-        [weekly[hours_col] > capacity, weekly[hours_col] > capacity * 0.75],
-        ["red", "orange"],
-        default="green"
+def render_weekly_bar_chart(
+    df,
+    x_col,
+    y_col,
+    *,
+    color="#2E86C1",
+    highlight_week=True,
+    capacity=None,
+    show_75_line=True,
+    capacity_borders=False,
+    y_max=None,
+    y_title="Hours",
+    x_title="Week Ending",
+    text_col=None,
+    text_format=None,
+    hover_suffix="hours",
+):
+    if isinstance(color, str) and color in df.columns:
+        bar_colours = df[color]
+    elif highlight_week:
+        this_week = _this_week_label()
+        bar_colours = df[x_col].apply(lambda x: "#FFC300" if x == this_week else color)
+    else:
+        bar_colours = color
+
+    if capacity_borders and capacity is not None:
+        border_colours = np.select(
+            [df[y_col] > capacity, df[y_col] > capacity * 0.75],
+            ["red", "orange"],
+            default="green",
+        )
+        marker = dict(color=bar_colours, line=dict(color=border_colours, width=3))
+    else:
+        marker = dict(color=bar_colours, line=dict(width=0))
+
+    bar_text = df[text_col] if text_col else df[y_col].round(0)
+    trace_kwargs = dict(
+        x=df[x_col], y=df[y_col],
+        text=bar_text, textposition="outside",
+        hovertemplate=f"<b>%{{x}}</b><br>%{{y}} {hover_suffix}<extra></extra>",
+        marker=marker,
     )
-    return weekly
+    if text_format == "currency":
+        trace_kwargs["texttemplate"] = "£%{text:,.0f}"
 
+    fig = go.Figure()
+    fig.add_trace(go.Bar(**trace_kwargs))
 
-def _weekly_bar_layout(y_max):
-    return dict(
-        height=500, margin=dict(l=40, r=40, t=40, b=40),
-        plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)",
-        yaxis=dict(title="Hours", gridcolor="rgba(0,0,0,0.05)", zeroline=False, range=[0, y_max * 1.1]),
-        xaxis=dict(title="Week Ending", showgrid=False),
+    if capacity is not None:
+        cap_label = f"<b>Capacity £{capacity:,.0f}</b>" if text_format == "currency" else f"Capacity ({capacity})"
+        fig.add_hline(y=capacity, line=dict(color="red", width=4, dash="dash"),
+                      annotation_text=cap_label, annotation_position="top right")
+        if show_75_line:
+            fig.add_hline(y=int(capacity * 0.75), line=dict(color="pink", width=4, dash="dash"),
+                          annotation_text=f"75% Capacity ({int(capacity * 0.75)})",
+                          annotation_position="top right")
+
+    effective_y_max = max(
+        y_max if y_max is not None else df[y_col].max(),
+        capacity if capacity is not None else 0,
+    )
+    fig.update_layout(
+        height=500,
+        margin=dict(l=40, r=40, t=40, b=40),
+        plot_bgcolor="rgba(0,0,0,0)",
+        paper_bgcolor="rgba(0,0,0,0)",
+        yaxis=dict(title=y_title, gridcolor="rgba(0,0,0,0.05)", zeroline=False, range=[0, effective_y_max * 1.1]),
+        xaxis=dict(title=x_title, showgrid=False),
         showlegend=False,
-        font=dict(family="Segoe UI, sans-serif", size=13, color="#1a1a1a")
+        font=dict(family="Segoe UI, sans-serif", size=13, color="#1a1a1a"),
     )
-
-
-def render_flat_chart(weekly, capacity, y_max):
-    hours_col = "Estimated Bundle Time (Hours)"
-    weekly = _apply_weekly_colours(weekly, hours_col, capacity)
-
-    fig = go.Figure()
-    fig.add_trace(go.Bar(
-        x=weekly["Week Label"], y=weekly[hours_col],
-        text=weekly["Hours"], textposition="outside",
-        hovertemplate="<b>%{x}</b><br>%{y} hours<extra></extra>",
-        marker=dict(color=weekly["colour"], line=dict(color=weekly["capacity_colour"], width=3))
-    ))
-    fig.add_hline(y=capacity, line=dict(color="red", width=4, dash="dash"),
-                  annotation_text=f"Capacity ({capacity})", annotation_position="top right")
-    fig.add_hline(y=int(capacity * 0.75), line=dict(color="pink", width=4, dash="dash"),
-                  annotation_text=f"75% Capacity ({int(capacity * 0.75)})", annotation_position="top right")
-    fig.update_layout(**_weekly_bar_layout(y_max))
-    st.plotly_chart(fig, use_container_width=True)
-
-
-def render_fold_chart(weekly, capacity, y_max):
-    hours_col = "Estimated Fold Time (Hours)"
-    weekly = _apply_weekly_colours(weekly, hours_col, capacity)
-
-    fig = go.Figure()
-    fig.add_trace(go.Bar(
-        x=weekly["Week Label"], y=weekly[hours_col],
-        text=weekly["Hours"], textposition="outside",
-        hovertemplate="<b>%{x}</b><br>%{y} hours<extra></extra>",
-        marker=dict(color=weekly["colour"], line=dict(color=weekly["capacity_colour"], width=3))
-    ))
-    fig.add_hline(y=capacity, line=dict(color="red", width=4, dash="dash"),
-                  annotation_text=f"Capacity ({capacity})", annotation_position="top right")
-    fig.add_hline(y=int(capacity * 0.75), line=dict(color="pink", width=4, dash="dash"),
-                  annotation_text=f"75% Capacity ({int(capacity * 0.75)})", annotation_position="top right")
-    fig.update_layout(**_weekly_bar_layout(y_max))
-    st.plotly_chart(fig, use_container_width=True)
-
-
-def render_weld_chart(plot_df, y_max):
-    this_week = _this_week_label()
-    plot_df["colour"] = plot_df["Week Label"].apply(lambda x: "#FFC300" if x == this_week else "#2E86C1")
-
-    fig = go.Figure()
-    fig.add_trace(go.Bar(
-        x=plot_df["Week Label"], y=plot_df["Hours Plan"],
-        text=plot_df["Hours Plan"].round(0), textposition="outside",
-        hovertemplate="<b>%{x}</b><br>%{y} hours<extra></extra>",
-        marker=dict(color=plot_df["colour"], line=dict(width=0))
-    ))
-    fig.update_layout(**_weekly_bar_layout(y_max))
-    st.plotly_chart(fig, use_container_width=True)
-
-def render_galv_chart(plot_df, y_max):
-    this_week = _this_week_label()
-    plot_df["colour"] = "green"
-
-    fig = go.Figure()
-    fig.add_trace(go.Bar(
-        x=plot_df["Week Label"], y=plot_df["Price"],
-        text=plot_df["Price"].round(0), textposition="outside",
-        hovertemplate="<b>%{x}</b><br>%{y} hours<extra></extra>",
-        marker=dict(color=plot_df["colour"], line=dict(width=0))
-    ))
-    fig.update_layout(**_weekly_bar_layout(y_max))
     st.plotly_chart(fig, use_container_width=True)
 
 

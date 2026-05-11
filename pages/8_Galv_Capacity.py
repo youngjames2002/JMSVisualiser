@@ -11,6 +11,11 @@ df = clean_galv_data(data)
 daily_view = st.toggle("Toggle Weekly View vs Daily View (Next Month)", value=False)
 weekly = build_paint_plot_data(daily_view, df)
 
-render_galv_chart(weekly, weekly["Price"].max())
+render_weekly_bar_chart(
+    weekly, "Week Label", "Price",
+    color="green", highlight_week=False,
+    y_max=weekly["Price"].max(),
+    y_title="Value (£)",
+)
 if not daily_view:
     render_paint_table(weekly, df)

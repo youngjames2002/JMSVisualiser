@@ -49,5 +49,5 @@ weekly, y_max = build_machine_chart_data(clean_df, operation_filter)
 if weekly.empty:
     st.warning("No data selected")
 else:
-    render_weld_chart(weekly, y_max)
+    render_weekly_bar_chart(weekly, "Week Label", "Hours Plan", y_max=y_max, capacity=114)
     render_machine_table(filtered_df)

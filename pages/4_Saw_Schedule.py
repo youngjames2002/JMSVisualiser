@@ -18,7 +18,7 @@ render_saw_bundle_kpi(kpi_df, "next")
 
 # chart by week
 weekly = build_saw_chart_data(clean_df)
-render_weld_chart(weekly, weekly["Hours Plan"].max())
+render_weekly_bar_chart(weekly, "Week Label", "Hours Plan", y_max=weekly["Hours Plan"].max())
 
 filtered_df = weld_table_filters(clean_df)
 st.dataframe(filtered_df)

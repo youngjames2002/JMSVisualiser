@@ -24,14 +24,16 @@ render_weld_kpi(kpi_df, "Ballymena", "next", kpicol2)
 # apply site filter here (before chart but after kpis)
 site_filter = st.toggle("Toggle Site")
 if site_filter:
-    site="Ballymena"
+    site = "Ballymena"
+    capacity = 181
 else:
-    site="Kilrea"
+    site = "Kilrea"
+    capacity = 370
 st.markdown(f"""<h3>Currently showing: {site}<h3>""", unsafe_allow_html=True)
 
 # chart by week
 weekly, y_max = build_weld_chart_data(clean_df, site)
-render_weld_chart(weekly, y_max)
+render_weekly_bar_chart(weekly, "Week Label", "Hours Plan", y_max=y_max, capacity=capacity)
 
 render_weld_table(clean_df, site)
     
