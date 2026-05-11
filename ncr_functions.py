@@ -325,6 +325,7 @@ def ncr_graph(df, all_so=None):
             title="% Sales Orders Affected (4-week rolling avg)",
         )
         fig_pct.update_traces(line_color="#2a7ae0")
+        fig_pct.add_hline(y=2, line=dict(color="red", width=2, dash="dash"), annotation_text="2% target", annotation_position="top right")
         fig_pct.update_layout(margin=dict(t=40, b=20, l=20, r=20))
 
         c1, c2 = st.columns(2)

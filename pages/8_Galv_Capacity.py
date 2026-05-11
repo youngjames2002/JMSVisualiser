@@ -12,4 +12,5 @@ daily_view = st.toggle("Toggle Weekly View vs Daily View (Next Month)", value=Fa
 weekly = build_paint_plot_data(daily_view, df)
 
 render_galv_chart(weekly, weekly["Price"].max())
-render_paint_table(weekly, df)
+if not daily_view:
+    render_paint_table(weekly, df)
