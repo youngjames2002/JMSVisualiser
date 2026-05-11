@@ -15,6 +15,7 @@ DISPLAY_COLS = {
     "customer_ncr_no":                 "Customer NCR No",
     "original_sales_order":            "Original Sales Order",
     "customer_po":                     "Customer PO",
+    "date":                            "Date Recorded",
     "description":                     "Description",
     "department":                      "Department",
     "suggested_corrective_action":     "Suggested Corrective Action",
@@ -233,46 +234,54 @@ def render_so_and_weekly(df, date_filter):
 def ncr_graph(df, all_so=None):
     st.markdown('<div class="section-heading">Trends</div>', unsafe_allow_html=True)
     dated = df.dropna(subset=["date"]).copy()
-    daily = dated.groupby(dated["date"].dt.date).size().reset_index(name="count")
-    daily["date"] = pd.to_datetime(daily["date"])
-    daily = daily.sort_values("date")
-    daily["cumulative"] = daily["count"].cumsum()
+    dated["week"] = dated["date"].dt.to_period("W").dt.start_time
+    weekly = dated.groupby("week").size().reset_index(name="count")
+    weekly = weekly.sort_values("week").reset_index(drop=True)
+    weekly["rolling"] = weekly["count"].rolling(4, min_periods=1).mean().round(1)
 
-    fig_cumulative = px.line(
-        daily, x="date", y="cumulative",
+    fig_weekly = px.line(
+        weekly, x="week", y="rolling",
         markers=True,
-        labels={"date": "Date", "cumulative": "Total NCRs"},
-        title="Cumulative NCRs Over Time",
+        labels={"week": "Week", "rolling": "NCRs Recorded"},
+        title="NCRs Recorded (4-week rolling avg)",
     )
-    fig_cumulative.update_traces(line_color="#e05c2a")
-    fig_cumulative.update_layout(margin=dict(t=40, b=20, l=20, r=20))
+    fig_weekly.update_traces(line_color="#e05c2a")
+    fig_weekly.update_layout(margin=dict(t=40, b=20, l=20, r=20))
 
     if all_so is not None:
         external = dated[dated["customer_ncr_no"] != "Internal"].copy()
-        external["month"] = external["date"].dt.to_period("M").dt.to_timestamp()
-        ncr_monthly = external.groupby("month").size().reset_index(name="ncr_count")
+        external["week"] = external["date"].dt.to_period("W").dt.start_time
+        ncr_weekly = external.groupby("week").size().reset_index(name="ncr_count")
 
         so = all_so.copy()
-        so["month"] = so["Date Required"].dt.to_period("M").dt.to_timestamp()
-        so_monthly = so.groupby("month").size().reset_index(name="so_count")
+        so["week"] = so["Date Required"].dt.to_period("W").dt.start_time
+        so_weekly = so.groupby("week").size().reset_index(name="so_count")
 
-        merged = pd.merge(ncr_monthly, so_monthly, on="month", how="inner")
+        merged = pd.merge(ncr_weekly, so_weekly, on="week", how="right")
+        merged["ncr_count"] = merged["ncr_count"].fillna(0)
+        merged = merged.sort_values("week").reset_index(drop=True)
+
+        nonzero = merged.index[merged["ncr_count"] > 0]
+        if len(nonzero):
+            merged = merged.iloc[nonzero[0] : nonzero[-1] + 3].reset_index(drop=True)
+
         merged["pct"] = (merged["ncr_count"] / merged["so_count"] * 100).round(1)
+        merged["pct_rolling"] = merged["pct"].rolling(4, min_periods=1).mean().round(1)
 
         fig_pct = px.line(
-            merged, x="month", y="pct",
+            merged, x="week", y="pct_rolling",
             markers=True,
-            labels={"month": "Month", "pct": "% SOs Affected"},
-            title="% Sales Orders Affected per Month",
+            labels={"week": "Week", "pct_rolling": "% SOs Affected"},
+            title="% Sales Orders Affected (4-week rolling avg)",
         )
         fig_pct.update_traces(line_color="#2a7ae0")
         fig_pct.update_layout(margin=dict(t=40, b=20, l=20, r=20))
 
         c1, c2 = st.columns(2)
-        c2.plotly_chart(fig_cumulative, use_container_width=True)
+        c2.plotly_chart(fig_weekly, use_container_width=True)
         c1.plotly_chart(fig_pct, use_container_width=True)
     else:
-        st.plotly_chart(fig_cumulative, use_container_width=True)
+        st.plotly_chart(fig_weekly, use_container_width=True)
 
 
 

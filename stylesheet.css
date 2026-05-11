@@ -388,6 +388,15 @@ button:hover {
     border-radius: 12px;
     box-shadow: 0 1px 6px rgba(17, 36, 68, 0.09);
     padding: 8px 12px 4px;
+    width: 100% !important;
+    max-width: 100% !important;
+    overflow: hidden;
+    box-sizing: border-box;
+}
+[data-testid="stPlotlyChart"] > div,
+[data-testid="stPlotlyChart"] iframe {
+    max-width: 100% !important;
+    width: 100% !important;
 }
 
 /* ── Dashboard – filter bar ── */
