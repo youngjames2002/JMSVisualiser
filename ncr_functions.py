@@ -1,7 +1,6 @@
 import streamlit as st
 import psycopg2
 import pandas as pd
-import json
 import re
 import datetime
 import base64
@@ -51,20 +50,19 @@ def get_connection():
     return psycopg2.connect(st.secrets["NCRDB"]["DATABASE_PUBLIC_URL"])
 
 
-def _parse_json_list(val):
+
+
+def _split_csv(val):
     if isinstance(val, list):
         return val
-    try:
-        result = json.loads(val or '[]')
-        return result if isinstance(result, list) else []
-    except Exception:
+    if not isinstance(val, str) or not val.strip():
         return []
+    return [v.strip() for v in val.split(",") if v.strip()]
 
 
 def load_ncr_data(conn):
     df = pd.read_sql_query("SELECT * FROM ncr_log ORDER BY id DESC", conn)
 
-    # Drop legacy causal-factor columns if still present
     df = df.drop(columns=[
         "department", "root_cause", "suggested_corrective_action",
         "corrective_action_delegated_to", "corrective_action_due_date",
@@ -79,8 +77,8 @@ def load_ncr_data(conn):
         df["root_cause"]        = ""
         df["corrective_action"] = ""
     else:
-        cf["department"]   = cf["department"].apply(_parse_json_list)
-        cf["delegated_to"] = cf["delegated_to"].apply(_parse_json_list)
+        cf["department"]   = cf["department"].apply(_split_csv)
+        cf["delegated_to"] = cf["delegated_to"].apply(_split_csv)
 
         def agg(group):
             all_dept = list(dict.fromkeys(d for depts in group["department"] for d in depts))
@@ -98,9 +96,9 @@ def load_ncr_data(conn):
         grouped = cf.groupby("ncr_id").apply(agg).reset_index()
         df = df.merge(grouped, left_on="id", right_on="ncr_id", how="left")
 
-        df["department"]        = df["_dept"].apply(    lambda x: x if isinstance(x, list) else [])
-        df["delegated_to"]      = df["_del"].apply(     lambda x: x if isinstance(x, list) else [])
-        df["root_cause_list"]   = df["_rc_list"].apply( lambda x: x if isinstance(x, list) else [])
+        df["department"]        = df["_dept"].apply(lambda x: x if isinstance(x, list) else [])
+        df["delegated_to"]      = df["_del"].apply( lambda x: x if isinstance(x, list) else [])
+        df["root_cause_list"]   = df["_rc_list"].apply(lambda x: x if isinstance(x, list) else [])
         df["root_cause"]        = df["_rc_str"].fillna("")
         df["corrective_action"] = df["_ca_str"].fillna("")
 
