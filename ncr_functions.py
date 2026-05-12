@@ -4,6 +4,7 @@ import pandas as pd
 import re
 import datetime
 import base64
+import json
 import plotly.express as px
 from data import load_so_statii
 
@@ -57,7 +58,15 @@ def _split_csv(val):
         return val
     if not isinstance(val, str) or not val.strip():
         return []
-    return [v.strip() for v in val.split(",") if v.strip()]
+    stripped = val.strip()
+    if stripped.startswith("["):
+        try:
+            parsed = json.loads(stripped)
+            if isinstance(parsed, list):
+                return [str(v).strip() for v in parsed if str(v).strip()]
+        except (json.JSONDecodeError, ValueError):
+            pass
+    return [v.strip() for v in stripped.split(",") if v.strip()]
 
 
 def load_ncr_data(conn):
