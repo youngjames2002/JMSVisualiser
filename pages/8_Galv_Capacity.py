@@ -15,7 +15,7 @@ render_weekly_bar_chart(
     weekly, "Week Label", "Price",
     color="green", highlight_week=False,
     y_max=weekly["Price"].max(),
-    y_title="Value (£)",
+    y_title="Value (£)", text_format="currency"
 )
 if not daily_view:
     render_paint_table(weekly, df)
