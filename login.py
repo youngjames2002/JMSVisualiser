@@ -15,9 +15,7 @@ def require_auth():
         st.warning("🔒 Please log in first.")
         st.switch_page("login.py")
         st.stop()
-    authenticator = get_authenticator()
-    if authenticator:
-        authenticator.logout(location="sidebar")
+    get_authenticator()
 
 def get_authenticator():
     """Get authenticator from session or recreate it."""
@@ -44,7 +42,6 @@ authenticator.login()
 if st.session_state.get("authentication_status"):
     st.success("Login Successful")
     st.write("Use Sidebar to navigate app")
-    authenticator.logout(location="sidebar")
 elif st.session_state.get("authentication_status") is False:
     st.error("Incorrect username or password")
 else:
