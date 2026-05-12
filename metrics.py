@@ -350,8 +350,9 @@ def build_weld_chart_data(df, site):
     )
     y_max = full_weekly["Hours Plan"].max() if not full_weekly.empty else 0
 
-    # filter to only appropriate site
-    df = df[df["Site"] == site]
+    # filter to only appropriate site (None = both sites)
+    if site is not None:
+        df = df[df["Site"] == site]
 
     # Clean columns
     df.columns = df.columns.str.strip()

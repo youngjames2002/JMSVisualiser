@@ -751,7 +751,8 @@ def render_saw_bundle_kpi(kpi_df, week):
     render_single_kpi(kpi_df, week)
 
 def render_weld_table(df, site):
-    df = df[df["Site"] == site]
+    if site is not None:
+        df = df[df["Site"] == site]
     filtered_df = weld_table_filters(df)
     st.dataframe(filtered_df)
 

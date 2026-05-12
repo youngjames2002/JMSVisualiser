@@ -21,15 +21,18 @@ render_weld_kpi(kpi_df, "Ballymena", "late", kpicol2)
 render_weld_kpi(kpi_df, "Ballymena", "this", kpicol2)
 render_weld_kpi(kpi_df, "Ballymena", "next", kpicol2)
 
+BMENA_CAPACITY = 181
+KILREA_CAPACITY = 370
+
 # apply site filter here (before chart but after kpis)
-site_filter = st.toggle("Toggle Site")
-if site_filter:
-    site = "Ballymena"
-    capacity = 181
+site_option = st.selectbox("Site", ["Kilrea", "Ballymena", "Both Sites"])
+if site_option == "Both Sites":
+    site = None
+    capacity = BMENA_CAPACITY + KILREA_CAPACITY
 else:
-    site = "Kilrea"
-    capacity = 370
-st.markdown(f"""<h3>Currently showing: {site}<h3>""", unsafe_allow_html=True)
+    site = site_option
+    capacity = BMENA_CAPACITY if site == "Ballymena" else KILREA_CAPACITY
+st.markdown(f"""<h3>Currently showing: {site_option}<h3>""", unsafe_allow_html=True)
 
 # chart by week
 weekly, y_max = build_weld_chart_data(clean_df, site)
