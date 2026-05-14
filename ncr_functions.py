@@ -6,6 +6,7 @@ import datetime
 import base64
 import json
 import plotly.express as px
+import plotly.graph_objects as go
 from data import load_so_statii
 
 DISPLAY_COLS = {
@@ -273,20 +274,25 @@ def render_so_and_weekly(df, date_filter):
             return "#2a9e5f"
         return "#112444"
 
+    raw_note      = f'<span style="font-size:12px;color:#7a8baa;margin-left:8px;">({len(ncr_subset)}&thinsp;/&thinsp;{len(so_since)} SOs)</span>'
+    raw_note_1m   = f'<span style="font-size:10px;color:#7a8baa;margin-left:4px;">({len(ncr_1m)}&thinsp;/&thinsp;{len(so_1m)})</span>'
+
     if is_filtered:
         main_color    = _pct_color(so_pct, total_so_pct)
         main_val_html = (
             f'<span class="info-value" style="color:{main_color};">{so_pct}%</span>'
+            f'{raw_note}'
             f'<span style="font-size:13px;color:#7a8baa;margin-left:10px;">vs {total_so_pct}% overall</span>'
         )
         sub_color_1m = _pct_color(so_pct_1m, total_so_pct_1m)
         sub_30d_html = (
             f'<span class="info-sub-val" style="color:{sub_color_1m};">{so_pct_1m}%</span>'
+            f'{raw_note_1m}'
             f'<span style="font-size:10px;color:#7a8baa;"> / {total_so_pct_1m}% all</span>'
         )
     else:
-        main_val_html = f'<span class="info-value">{so_pct}%</span>'
-        sub_30d_html  = f'<span class="info-sub-val">{so_pct_1m}%</span>'
+        main_val_html = f'<span class="info-value">{so_pct}%</span>{raw_note}'
+        sub_30d_html  = f'<span class="info-sub-val">{so_pct_1m}%</span>{raw_note_1m}'
 
     show_6m = date_filter <= six_months_ago
     if show_6m:
@@ -295,6 +301,8 @@ def render_so_and_weekly(df, date_filter):
         so_pct_6m    = round(len(ncr_6m) / len(so_6m) * 100, 1) if len(so_6m) else 0
         ncr_6m_count = int(len(ncr_6m))
 
+        raw_note_6m = f'<span style="font-size:10px;color:#7a8baa;margin-left:4px;">({len(ncr_6m)}&thinsp;/&thinsp;{len(so_6m)})</span>'
+
         if is_filtered:
             total_so_6m     = all_so[all_so["Date Required"] >= six_months_ago]
             total_ncr_6m    = external[external["date"] >= six_months_ago]
@@ -302,10 +310,11 @@ def render_so_and_weekly(df, date_filter):
             sub_color_6m    = _pct_color(so_pct_6m, total_so_pct_6m)
             six_month_so_val = (
                 f'<span class="info-sub-val" style="color:{sub_color_6m};">{so_pct_6m}%</span>'
+                f'{raw_note_6m}'
                 f'<span style="font-size:10px;color:#7a8baa;"> / {total_so_pct_6m}% all</span>'
             )
         else:
-            six_month_so_val = f'<span class="info-sub-val">{so_pct_6m}%</span>'
+            six_month_so_val = f'<span class="info-sub-val">{so_pct_6m}%</span>{raw_note_6m}'
 
         six_month_so_html = f"""
             <div class="info-sub-item">
@@ -320,9 +329,10 @@ def render_so_and_weekly(df, date_filter):
     else:
         six_month_so_html = six_month_ncr_html = ""
 
+    week_source     = df[df["customer"] == selected_customer] if is_filtered else df
     this_week_start = (today - pd.Timedelta(days=today.weekday())).normalize()
     last_week_start = this_week_start - pd.Timedelta(weeks=1)
-    week_df         = df.copy()
+    week_df         = week_source.copy()
     week_df["Week"] = week_df["date"].dt.to_period("W").dt.start_time
     this_week_df    = week_df[week_df["Week"] == this_week_start]
     last_week_df    = week_df[week_df["Week"] == last_week_start]
@@ -332,7 +342,7 @@ def render_so_and_weekly(df, date_filter):
     last_week       = int(len(last_week_df))
     last_week_int   = int((last_week_df["customer_ncr_no"] == "Internal").sum())
     last_week_ext   = last_week - last_week_int
-    df_30d          = df[df["date"] >= month_ago]
+    df_30d          = week_source[week_source["date"] >= month_ago]
     ncr_30d         = int(len(df_30d))
     ncr_30d_int     = int((df_30d["customer_ncr_no"] == "Internal").sum())
     ncr_30d_ext     = ncr_30d - ncr_30d_int
@@ -358,9 +368,10 @@ def render_so_and_weekly(df, date_filter):
         </div>
     </div>
     """, unsafe_allow_html=True)
+    week_card_label = f"NCRs logged this week ({selected_customer})" if is_filtered else "NCRs logged this week"
     c2.markdown(f"""
     <div class="info-card">
-        NCRs logged this week
+        {week_card_label}
         <div style="display:flex;gap:20px;margin-top:4px;">
             <div style="flex:1;">
                 <span style="font-size:11px;font-weight:700;color:#7a8baa;text-transform:uppercase;letter-spacing:0.5px;">Total</span>
@@ -427,28 +438,56 @@ def ncr_graph(df, all_so=None):
         merged["ncr_count"] = merged["ncr_count"].fillna(0)
         merged = merged.sort_values("week").reset_index(drop=True)
 
+        this_week_start = (pd.Timestamp.today().normalize() - pd.Timedelta(days=pd.Timestamp.today().weekday()))
+        merged = merged[merged["week"] <= this_week_start].reset_index(drop=True)
+
         nonzero = merged.index[merged["ncr_count"] > 0]
         if len(nonzero):
-            merged = merged.iloc[nonzero[0] : nonzero[-1] + 3].reset_index(drop=True)
+            merged = merged.iloc[nonzero[0]:].reset_index(drop=True)
 
         merged["pct"] = (merged["ncr_count"] / merged["so_count"] * 100).round(1)
         merged["pct_rolling"] = merged["pct"].rolling(4, min_periods=1).mean().round(1)
 
-        fig_pct = px.line(
-            merged, x="week", y="pct_rolling",
-            markers=True,
-            labels={"week": "Week", "pct_rolling": "% SOs Affected"},
-            title="% Sales Orders Affected (4-week rolling avg)",
-        )
-        fig_pct.update_traces(line_color="#2a7ae0")
+        fig_pct = go.Figure()
+        fig_pct.add_trace(go.Bar(
+            x=merged["week"], y=merged["pct"],
+            name="% (weekly)", marker_color="rgba(42,122,224,0.25)",
+            hovertemplate="%{x|%d %b %Y}: %{y}%<extra></extra>",
+        ))
+        fig_pct.add_trace(go.Scatter(
+            x=merged["week"], y=merged["pct_rolling"],
+            name="4-wk avg", mode="lines+markers",
+            line=dict(color="#2a7ae0", width=2),
+            hovertemplate="%{x|%d %b %Y}: %{y}%<extra></extra>",
+        ))
         fig_pct.add_hline(y=2, line=dict(color="red", width=2, dash="dash"), annotation_text="2% target", annotation_position="top right")
-        today_ms = int(pd.Timestamp.today().normalize().timestamp() * 1000)
-        fig_pct.add_vline(x=today_ms, line=dict(color="#999999", width=1, dash="dash"), annotation_text="Today", annotation_position="top left")
-        fig_pct.update_layout(margin=dict(t=40, b=20, l=20, r=20))
+        fig_pct.update_layout(
+            title="% Sales Orders Affected (4-week rolling avg)",
+            xaxis_title="Week", yaxis_title="% SOs Affected",
+            margin=dict(t=40, b=20, l=20, r=20),
+            legend=dict(orientation="h", y=-0.2),
+            bargap=0.2,
+        )
 
         c1, c2 = st.columns(2)
         c2.plotly_chart(fig_weekly, use_container_width=True)
         c1.plotly_chart(fig_pct, use_container_width=True)
+
+        # with st.expander("Debug: % SOs affected — raw data per week", expanded=False):
+        #     st.markdown("**Weekly summary** (ncr_count, so_count, raw %, rolling avg)")
+        #     st.dataframe(
+        #         merged[["week", "ncr_count", "so_count", "pct", "pct_rolling"]].rename(columns={
+        #             "week": "Week", "ncr_count": "NCRs", "so_count": "SOs",
+        #             "pct": "% (raw)", "pct_rolling": "% (4wk avg)",
+        #         }),
+        #         use_container_width=True,
+        #     )
+        #     ncr_detail_cols = [c for c in ["id", "date", "week", "customer", "original_sales_order", "description"] if c in external.columns]
+        #     st.markdown("**NCRs per week** (external only)")
+        #     st.dataframe(external[ncr_detail_cols].sort_values("week").reset_index(drop=True), use_container_width=True)
+        #     st.markdown("**SOs per week** (Date Required, trimmed to same range)")
+        #     so_trimmed = so[(so["week"] >= merged["week"].min()) & (so["week"] <= merged["week"].max())]
+        #     st.dataframe(so_trimmed.sort_values("week").reset_index(drop=True), use_container_width=True)
     else:
         st.plotly_chart(fig_weekly, use_container_width=True)
 
