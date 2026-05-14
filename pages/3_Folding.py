@@ -22,19 +22,15 @@ render_weld_kpi(kpi_df, "Ballymena", "late", kpicol2)
 render_weld_kpi(kpi_df, "Ballymena", "this", kpicol2)
 render_weld_kpi(kpi_df, "Ballymena", "next", kpicol2)
 
-capacity_ballymena = int(capacity_hours("Folding") * 0.6)
-capacity_kilrea = int(capacity_hours("Folding") * 0.4)
-
-max_capacity = max(capacity_ballymena, capacity_kilrea)
+max_capacity = 80
+capacity = 80
 
 # site toggle
 site_filter = st.toggle("Toggle Site")
 if site_filter:
     site="Ballymena"
-    capacity = capacity_ballymena
 else:
     site="Kilrea"
-    capacity = capacity_kilrea
 st.markdown(f"""<h3>Currently showing: {site}<h3>""", unsafe_allow_html=True)
 
 # chart here
