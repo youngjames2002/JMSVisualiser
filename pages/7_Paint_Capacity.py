@@ -4,6 +4,10 @@ from ui_components import *
 
 page_setup("Paint Capacity")
 
+if st.button("Refresh Statii Data"):
+    statii_paint_data.clear()
+    st.rerun()
+
 CAPACITY = 35000
 CLOSE_CALL = 30000
 

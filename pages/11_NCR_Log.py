@@ -30,6 +30,11 @@ def inject_styles():
 
 def main():
     inject_styles()
+
+    if st.button("Refresh Statii Data"):
+        load_so_statii.clear()
+        st.rerun()
+
     date_filter = render_date_filter()
 
     conn = get_connection()

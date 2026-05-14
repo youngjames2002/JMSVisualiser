@@ -4,6 +4,10 @@ from ui_components import *
 
 page_setup("Machining Schedule")
 
+if st.button("Refresh Statii Data"):
+    statii_completed_jobs.clear()
+    st.rerun()
+
 df = load_data_machine_sp()
 df = remove_completed_jobs_statii(df, "machine")
 clean_df = clean_weld_saw_machine_data(df)

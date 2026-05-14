@@ -4,6 +4,10 @@ from ui_components import *
 
 page_setup("Rubber Lining Schedule")
 
+if st.button("Refresh Statii Data"):
+    statii_completed_jobs.clear()
+    st.rerun()
+
 df = load_data_rubber_sp()
 df = remove_completed_jobs_statii(df, "rubber lining")
 
