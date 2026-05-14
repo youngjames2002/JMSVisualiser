@@ -21,7 +21,7 @@ render_weld_kpi(kpi_df, "Ballymena", "late", kpicol2)
 render_weld_kpi(kpi_df, "Ballymena", "this", kpicol2)
 render_weld_kpi(kpi_df, "Ballymena", "next", kpicol2)
 
-BMENA_CAPACITY = 181
+BMENA_CAPACITY = 200
 KILREA_CAPACITY = 370
 
 # apply site filter here (before chart but after kpis)
