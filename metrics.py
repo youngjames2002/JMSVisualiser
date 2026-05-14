@@ -342,7 +342,12 @@ def build_machine_kpis(df):
 def build_weld_chart_data(df, site):
     df = df.copy()
 
-    # get global max for fixed graph scale
+    # Clean columns and convert types before any aggregation
+    df.columns = df.columns.str.strip()
+    df["Week Ending"] = pd.to_datetime(df["Week Ending"], dayfirst=True, errors="coerce")
+    df["Hours Plan"] = pd.to_numeric(df["Hours Plan"], errors="coerce").fillna(0)
+
+    # get global max for fixed graph scale (before site filter)
     full_weekly = (
         df.groupby("Week Ending")["Hours Plan"]
         .sum()
@@ -354,23 +359,44 @@ def build_weld_chart_data(df, site):
     if site is not None:
         df = df[df["Site"] == site]
 
-    # Clean columns
-    df.columns = df.columns.str.strip()
+    # Determine this week's Friday ending date
+    today = pd.Timestamp.today().normalize()
+    this_week_end = today + pd.offsets.Week(weekday=4)
 
-    # Convert types
-    df["Week Ending"] = pd.to_datetime(df["Week Ending"], dayfirst=True, errors="coerce")
-    df["Hours Plan"] = pd.to_numeric(df["Hours Plan"], errors="coerce").fillna(0)
+    # Split into overdue (before this week) and on-time
+    late_df = df[df["Week Ending"] < this_week_end]
+    on_time_df = df[df["Week Ending"] >= this_week_end]
 
-    # Aggregate to weekly level
+    overdue_hours = late_df["Hours Plan"].sum()
+
+    # Aggregate on-time jobs to weekly level
     weekly = (
-        df.groupby("Week Ending")["Hours Plan"]
+        on_time_df.groupby("Week Ending")["Hours Plan"]
         .sum()
         .reset_index()
         .sort_values("Week Ending")
     )
 
+    # Attach overdue hours to this week's row
+    weekly["Overdue Hours"] = 0.0
+    if overdue_hours > 0:
+        if this_week_end in weekly["Week Ending"].values:
+            weekly.loc[weekly["Week Ending"] == this_week_end, "Overdue Hours"] = overdue_hours
+        else:
+            new_row = pd.DataFrame({
+                "Week Ending": [this_week_end],
+                "Hours Plan": [0.0],
+                "Overdue Hours": [overdue_hours],
+            })
+            weekly = pd.concat([weekly, new_row]).sort_values("Week Ending").reset_index(drop=True)
+
     # Format label for display
     weekly["Week Label"] = weekly["Week Ending"].dt.strftime("%d %b")
+
+    # Expand y_max to account for the stacked overdue bar
+    if not weekly.empty:
+        stacked_max = (weekly["Hours Plan"] + weekly["Overdue Hours"]).max()
+        y_max = max(y_max, stacked_max)
 
     return weekly, y_max
 
@@ -389,92 +415,131 @@ def build_machine_chart_data(df, operation=None):
     )
     y_max = full_weekly["Hours Plan"].max() if not full_weekly.empty else 0
 
-    # -----------------------------
-    # Handle filtering properly
-    # -----------------------------
     if operation is not None:
-        # If empty list → return empty df
         if isinstance(operation, list) and len(operation) == 0:
-            return pd.DataFrame(columns=["Week Ending", "Hours Plan", "Week Label"]), 0
-
-        # If single string → convert to list
+            return pd.DataFrame(columns=["Week Ending", "Hours Plan", "Overdue Hours", "Week Label"]), 0
         if isinstance(operation, str):
             operation = [operation]
-
         df = df[df["Operation"].isin(operation)]
 
-    # -----------------------------
-    # Convert types
-    # -----------------------------
     df["Week Ending"] = pd.to_datetime(df["Week Ending"], dayfirst=True, errors="coerce")
     df["Hours Plan"] = pd.to_numeric(df["Hours Plan"], errors="coerce").fillna(0)
 
-    # -----------------------------
-    # Handle empty AFTER filter
-    # -----------------------------
     if df.empty:
-        return pd.DataFrame(columns=["Week Ending", "Hours Plan", "Week Label"])
+        return pd.DataFrame(columns=["Week Ending", "Hours Plan", "Overdue Hours", "Week Label"]), 0
 
-    # -----------------------------
-    # Aggregate
-    # -----------------------------
+    today = pd.Timestamp.today().normalize()
+    this_week_end = today + pd.offsets.Week(weekday=4)
+
+    late_df = df[df["Week Ending"] < this_week_end]
+    on_time_df = df[df["Week Ending"] >= this_week_end]
+    overdue_hours = late_df["Hours Plan"].sum()
+
     weekly = (
-        df.groupby("Week Ending")["Hours Plan"]
+        on_time_df.groupby("Week Ending")["Hours Plan"]
         .sum()
         .reset_index()
         .sort_values("Week Ending")
     )
 
+    weekly["Overdue Hours"] = 0.0
+    if overdue_hours > 0:
+        if this_week_end in weekly["Week Ending"].values:
+            weekly.loc[weekly["Week Ending"] == this_week_end, "Overdue Hours"] = overdue_hours
+        else:
+            new_row = pd.DataFrame({
+                "Week Ending": [this_week_end],
+                "Hours Plan": [0.0],
+                "Overdue Hours": [overdue_hours],
+            })
+            weekly = pd.concat([weekly, new_row]).sort_values("Week Ending").reset_index(drop=True)
+
     weekly["Week Label"] = weekly["Week Ending"].dt.strftime("%d %b")
+
+    stacked_max = (weekly["Hours Plan"] + weekly["Overdue Hours"]).max()
+    y_max = max(y_max, stacked_max)
 
     return weekly, y_max
 
 def build_saw_chart_data(df):
     df = df.copy()
 
-    # Clean columns
+    # Clean columns and convert types
     df.columns = df.columns.str.strip()
-
-    # Convert types
     df["Week Ending"] = pd.to_datetime(df["Week Ending"], dayfirst=True, errors="coerce")
     df["Hours Plan"] = pd.to_numeric(df["Hours Plan"], errors="coerce").fillna(0)
 
-    # Aggregate to weekly level
+    # Determine this week's Friday ending date
+    today = pd.Timestamp.today().normalize()
+    this_week_end = today + pd.offsets.Week(weekday=4)
+
+    late_df = df[df["Week Ending"] < this_week_end]
+    on_time_df = df[df["Week Ending"] >= this_week_end]
+    overdue_hours = late_df["Hours Plan"].sum()
+
     weekly = (
-        df.groupby("Week Ending")["Hours Plan"]
+        on_time_df.groupby("Week Ending")["Hours Plan"]
         .sum()
         .reset_index()
         .sort_values("Week Ending")
     )
 
-    # Format label for display
-    weekly["Week Label"] = weekly["Week Ending"].dt.strftime("%d %b")
+    weekly["Overdue Hours"] = 0.0
+    if overdue_hours > 0:
+        if this_week_end in weekly["Week Ending"].values:
+            weekly.loc[weekly["Week Ending"] == this_week_end, "Overdue Hours"] = overdue_hours
+        else:
+            new_row = pd.DataFrame({
+                "Week Ending": [this_week_end],
+                "Hours Plan": [0.0],
+                "Overdue Hours": [overdue_hours],
+            })
+            weekly = pd.concat([weekly, new_row]).sort_values("Week Ending").reset_index(drop=True)
 
-    return weekly
+    weekly["Week Label"] = weekly["Week Ending"].dt.strftime("%d %b")
+    y_max = (weekly["Hours Plan"] + weekly["Overdue Hours"]).max() if not weekly.empty else 0
+
+    return weekly, y_max
 
 def build_tube_chart_data(df):
     df = df.copy()
 
-    # Clean columns
     df.columns = df.columns.str.strip()
-
-    # Convert types
     df["Week Ending"] = pd.to_datetime(df["Week Ending"], dayfirst=True, errors="coerce")
     df["Estimated Bundle Time (Hours)"] = pd.to_numeric(df["Estimated Bundle Time (Hours)"], errors="coerce").fillna(0)
 
-    # Aggregate to weekly level
+    today = pd.Timestamp.today().normalize()
+    this_week_end = today + pd.offsets.Week(weekday=4)
+
+    late_df = df[df["Week Ending"] < this_week_end]
+    on_time_df = df[df["Week Ending"] >= this_week_end]
+    overdue_hours = late_df["Estimated Bundle Time (Hours)"].sum()
+
     weekly = (
-        df.groupby("Week Ending")["Estimated Bundle Time (Hours)"]
+        on_time_df.groupby("Week Ending")["Estimated Bundle Time (Hours)"]
         .sum()
         .reset_index()
         .sort_values("Week Ending")
     )
 
-    # Format label for display
+    weekly["Overdue Hours"] = 0.0
+    if overdue_hours > 0:
+        if this_week_end in weekly["Week Ending"].values:
+            weekly.loc[weekly["Week Ending"] == this_week_end, "Overdue Hours"] = overdue_hours
+        else:
+            new_row = pd.DataFrame({
+                "Week Ending": [this_week_end],
+                "Estimated Bundle Time (Hours)": [0.0],
+                "Overdue Hours": [overdue_hours],
+            })
+            weekly = pd.concat([weekly, new_row]).sort_values("Week Ending").reset_index(drop=True)
+
     weekly["Week Label"] = weekly["Week Ending"].dt.strftime("%d %b")
     weekly["Hours"] = weekly["Estimated Bundle Time (Hours)"].apply(format_hours)
 
-    return weekly
+    y_max = (weekly["Estimated Bundle Time (Hours)"] + weekly["Overdue Hours"]).max() if not weekly.empty else 0
+
+    return weekly, y_max
 
 def build_flat_chart_data(df, site):
     df = df.copy()
@@ -514,7 +579,11 @@ def build_flat_chart_data(df, site):
 def build_fold_chart_data(df, site):
     df = df.copy()
 
-    # get global max for fixed graph scale
+    df.columns = df.columns.str.strip()
+    df["Week Ending"] = pd.to_datetime(df["Week Ending"], dayfirst=True, errors="coerce")
+    df["Estimated Fold Time (Hours)"] = pd.to_numeric(df["Estimated Fold Time (Hours)"], errors="coerce").fillna(0)
+
+    # get global max for fixed graph scale (before site filter)
     full_weekly = (
         df.groupby("Week Ending")["Estimated Fold Time (Hours)"]
         .sum()
@@ -522,27 +591,40 @@ def build_fold_chart_data(df, site):
     )
     y_max = full_weekly["Estimated Fold Time (Hours)"].max() if not full_weekly.empty else 0
 
-    # filter to only appropriate site
     df = df[df["Site"] == site]
 
-    # Clean columns
-    df.columns = df.columns.str.strip()
+    today = pd.Timestamp.today().normalize()
+    this_week_end = today + pd.offsets.Week(weekday=4)
 
-    # Convert types
-    df["Week Ending"] = pd.to_datetime(df["Week Ending"], dayfirst=True, errors="coerce")
-    df["Estimated Fold Time (Hours)"] = pd.to_numeric(df["Estimated Fold Time (Hours)"], errors="coerce").fillna(0)
+    late_df = df[df["Week Ending"] < this_week_end]
+    on_time_df = df[df["Week Ending"] >= this_week_end]
+    overdue_hours = late_df["Estimated Fold Time (Hours)"].sum()
 
-    # Aggregate to weekly level
     weekly = (
-        df.groupby("Week Ending")["Estimated Fold Time (Hours)"]
+        on_time_df.groupby("Week Ending")["Estimated Fold Time (Hours)"]
         .sum()
         .reset_index()
         .sort_values("Week Ending")
     )
 
-    # Format label for display
+    weekly["Overdue Hours"] = 0.0
+    if overdue_hours > 0:
+        if this_week_end in weekly["Week Ending"].values:
+            weekly.loc[weekly["Week Ending"] == this_week_end, "Overdue Hours"] = overdue_hours
+        else:
+            new_row = pd.DataFrame({
+                "Week Ending": [this_week_end],
+                "Estimated Fold Time (Hours)": [0.0],
+                "Overdue Hours": [overdue_hours],
+            })
+            weekly = pd.concat([weekly, new_row]).sort_values("Week Ending").reset_index(drop=True)
+
     weekly["Week Label"] = weekly["Week Ending"].dt.strftime("%d %b")
     weekly["Hours"] = weekly["Estimated Fold Time (Hours)"].apply(format_hours)
+
+    if not weekly.empty:
+        stacked_max = (weekly["Estimated Fold Time (Hours)"] + weekly["Overdue Hours"]).max()
+        y_max = max(y_max, stacked_max)
 
     return weekly, y_max
     

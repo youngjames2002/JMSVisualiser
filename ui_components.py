@@ -552,7 +552,10 @@ def render_weekly_bar_chart(
     text_col=None,
     text_format=None,
     hover_suffix="hours",
+    overdue_col=None,
 ):
+    has_overdue = bool(overdue_col and overdue_col in df.columns and df[overdue_col].sum() > 0)
+
     if isinstance(color, str) and color in df.columns:
         bar_colours = df[color]
     elif highlight_week:
@@ -572,10 +575,12 @@ def render_weekly_bar_chart(
         marker = dict(color=bar_colours, line=dict(width=0))
 
     bar_text = df[text_col] if text_col else df[y_col].round(0)
+    text_pos = "inside" if has_overdue else "outside"
     trace_kwargs = dict(
         x=df[x_col], y=df[y_col],
-        text=bar_text, textposition="outside",
-        hovertemplate=f"<b>%{{x}}</b><br>%{{y}} {hover_suffix}<extra></extra>",
+        name="Scheduled",
+        text=bar_text, textposition=text_pos,
+        hovertemplate=f"<b>%{{x}}</b><br>%{{y:.0f}} {hover_suffix}<extra></extra>",
         marker=marker,
     )
     if text_format == "currency":
@@ -583,6 +588,22 @@ def render_weekly_bar_chart(
 
     fig = go.Figure()
     fig.add_trace(go.Bar(**trace_kwargs))
+
+    if has_overdue:
+        overdue_text = df[overdue_col].apply(lambda v: f"+{v:.0f} overdue" if v > 0 else "")
+        fig.add_trace(go.Bar(
+            x=df[x_col],
+            y=df[overdue_col],
+            name="Overdue",
+            text=overdue_text,
+            textposition="outside",
+            hovertemplate=f"<b>%{{x}}</b><br>%{{y:.0f}} overdue {hover_suffix}<extra></extra>",
+            marker=dict(
+                color="rgba(220, 80, 60, 0.75)",
+                pattern=dict(shape="/", fgcolor="rgba(160, 20, 10, 0.9)", size=6, solidity=0.4),
+                line=dict(width=0),
+            ),
+        ))
 
     if capacity is not None:
         cap_label = f"<b>Capacity £{capacity:,.0f}</b>" if text_format == "currency" else f"Capacity ({capacity})"
@@ -599,12 +620,13 @@ def render_weekly_bar_chart(
     )
     fig.update_layout(
         height=500,
+        barmode="stack" if has_overdue else "group",
         margin=dict(l=40, r=40, t=40, b=40),
         plot_bgcolor="rgba(0,0,0,0)",
         paper_bgcolor="rgba(0,0,0,0)",
         yaxis=dict(title=y_title, gridcolor="rgba(0,0,0,0.05)", zeroline=False, range=[0, effective_y_max * 1.1]),
         xaxis=dict(title=x_title, showgrid=False),
-        showlegend=False,
+        showlegend=has_overdue,
         font=dict(family="Segoe UI, sans-serif", size=13, color="#1a1a1a"),
     )
     st.plotly_chart(fig, use_container_width=True)

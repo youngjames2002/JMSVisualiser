@@ -38,8 +38,8 @@ weekly, y_max = build_fold_chart_data(clean_df, site)
 y_max = max(y_max, max_capacity)
 render_weekly_bar_chart(
     weekly, "Week Label", "Estimated Fold Time (Hours)",
-    capacity=capacity, show_75_line=True, capacity_borders=True,
-    y_max=y_max, text_col="Hours",
+    capacity=capacity, show_75_line=True,
+    y_max=y_max, text_col="Hours", overdue_col="Overdue Hours",
 )
 
 # table

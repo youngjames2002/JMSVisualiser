@@ -21,13 +21,12 @@ render_saw_bundle_kpi(kpi_df, "next")
 
 
 # chart here
-weekly = build_tube_chart_data(clean_df)
+weekly, y_max = build_tube_chart_data(clean_df)
 capacity=capacity_hours("Flat Cutting")
-y_max = max(capacity, weekly["Estimated Bundle Time (Hours)"].max())
 render_weekly_bar_chart(
     weekly, "Week Label", "Estimated Bundle Time (Hours)",
-    capacity=capacity, show_75_line=True, capacity_borders=True,
-    y_max=y_max, text_col="Hours",
+    capacity=capacity, show_75_line=True,
+    y_max=y_max, text_col="Hours", overdue_col="Overdue Hours",
 )
 
 # table
