@@ -5,7 +5,6 @@ import re
 import datetime
 import base64
 import json
-import plotly.express as px
 import plotly.graph_objects as go
 from data import load_so_statii
 
@@ -412,18 +411,45 @@ def ncr_graph(df, all_so=None):
     st.markdown('<div class="section-heading">Trends</div>', unsafe_allow_html=True)
     dated = df.dropna(subset=["date"]).copy()
     dated["week"] = dated["date"].dt.to_period("W").dt.start_time
-    weekly = dated.groupby("week").size().reset_index(name="count")
-    weekly = weekly.sort_values("week").reset_index(drop=True)
-    weekly["rolling"] = weekly["count"].rolling(4, min_periods=1).mean().round(1)
+    dated["type"] = dated["customer_ncr_no"].apply(lambda x: "Internal" if x == "Internal" else "External")
 
-    fig_weekly = px.line(
-        weekly, x="week", y="rolling",
-        markers=True,
-        labels={"week": "Week", "rolling": "NCRs Recorded"},
+    weekly_split = dated.groupby(["week", "type"]).size().unstack(fill_value=0).reset_index()
+    for col in ("Internal", "External"):
+        if col not in weekly_split.columns:
+            weekly_split[col] = 0
+    weekly_split = weekly_split.sort_values("week").reset_index(drop=True)
+    weekly_split["total"] = weekly_split["Internal"] + weekly_split["External"]
+    weekly_split["rolling"] = weekly_split["total"].rolling(4, min_periods=1).mean().round(1)
+
+    fig_weekly = go.Figure()
+    fig_weekly.add_trace(go.Bar(
+        x=weekly_split["week"], y=weekly_split["External"],
+        name="External", marker_color="rgba(224,92,42,0.5)",
+        hovertemplate="%{x|%d %b %Y} — External: %{y}<extra></extra>",
+    ))
+    fig_weekly.add_trace(go.Bar(
+        x=weekly_split["week"], y=weekly_split["Internal"],
+        name="Internal",
+        marker=dict(
+            color="rgba(224,92,42,0.25)",
+            pattern=dict(shape="/", fgcolor="rgba(224,92,42,0.8)", size=6),
+        ),
+        hovertemplate="%{x|%d %b %Y} — Internal: %{y}<extra></extra>",
+    ))
+    fig_weekly.add_trace(go.Scatter(
+        x=weekly_split["week"], y=weekly_split["rolling"],
+        name="4-wk avg (total)", mode="lines+markers",
+        line=dict(color="#e05c2a", width=2),
+        hovertemplate="%{x|%d %b %Y}: %{y}<extra></extra>",
+    ))
+    fig_weekly.update_layout(
         title="NCRs Recorded (4-week rolling avg)",
+        xaxis_title="Week", yaxis_title="NCRs Recorded",
+        barmode="stack",
+        margin=dict(t=40, b=20, l=20, r=20),
+        legend=dict(orientation="h", y=-0.2),
+        bargap=0.2,
     )
-    fig_weekly.update_traces(line_color="#e05c2a")
-    fig_weekly.update_layout(margin=dict(t=40, b=20, l=20, r=20))
 
     if all_so is not None:
         external = dated[dated["customer_ncr_no"] != "Internal"].copy()
