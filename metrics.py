@@ -302,21 +302,15 @@ def _build_site_kpis(df, group_col, hours_col):
     this_week, next_week = _this_and_next_friday()
 
     late_series = df[df["Week Ending"] < this_week].groupby(group_col)[hours_col].sum()
+    this_series = df[df["Week Ending"] == this_week].groupby(group_col)[hours_col].sum()
+    next_series = df[df["Week Ending"] == next_week].groupby(group_col)[hours_col].sum()
 
-    kpi_df = (
-        df[df["Week Ending"].isin([this_week, next_week])]
-        .groupby([group_col, "Week Ending"])[hours_col]
-        .sum()
-        .unstack(fill_value=0)
-        .rename(columns={this_week: "This Week Hours", next_week: "Next Week Hours"})
-        .reset_index()
-    )
-
-    for col in ["This Week Hours", "Next Week Hours"]:
-        if col not in kpi_df:
-            kpi_df[col] = 0
+    all_groups = df[group_col].dropna().unique()
+    kpi_df = pd.DataFrame({group_col: all_groups})
 
     kpi_df["Late Hours"] = kpi_df[group_col].map(late_series).fillna(0)
+    kpi_df["This Week Hours"] = kpi_df[group_col].map(this_series).fillna(0)
+    kpi_df["Next Week Hours"] = kpi_df[group_col].map(next_series).fillna(0)
 
     for col in ["Late Hours", "This Week Hours", "Next Week Hours"]:
         kpi_df[col] = kpi_df[col].apply(format_hours)

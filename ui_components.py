@@ -719,6 +719,7 @@ def render_kpi_card(kpi_df, lookup_col, lookup_val, week, col):
 
     if row.empty:
         value = "0h 0m"
+        title = "No Data"
     elif week == "late":
         value = row["Late Hours"].iloc[0]
         title = "Total Late Hours"
