@@ -1,8 +1,8 @@
-streamlit
-pandas
-plotly
-openpyxl
-msal
-requests
-streamlit-authenticator
-psycopg2-binary
+streamlit==1.55.0
+pandas==2.3.3
+plotly==6.6.0
+openpyxl==3.1.5
+msal==1.36.0
+requests==2.33.1
+streamlit-authenticator==0.4.2
+psycopg2-binary==2.9.12
