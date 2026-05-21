@@ -576,11 +576,14 @@ def remove_completed_jobs(df, resource):
 
     return df
 
-STATII_RESOURCE_MAP = {
-    "saw":          "Saw",
-    "weld":         "Welding",
-    "machine":      "Machining",
-    "rubber lining": "Rubber lining",
+# Maps each schedule key to the Statii column and value used to identify completed jobs.
+# "col" is the Statii scheduling report column to filter on ("resource" or "operation").
+# "value" is the string to match (case-insensitive, partial match).
+STATII_FILTER_MAP = {
+    "saw":           {"col": "resource",  "value": "Saw"},
+    "weld":          {"col": "resource",  "value": "Welding"},
+    "machine":       {"col": "resource",  "value": "Machining"},
+    "rubber lining": {"col": "operation", "value": "Rubber lining"},
 }
 
 def remove_completed_jobs_statii(df, resource):
@@ -590,9 +593,11 @@ def remove_completed_jobs_statii(df, resource):
     completed_df = pd.DataFrame(completed_data["rows"], columns=completed_data["columns"])
     if "number" not in completed_df.columns:
         return df
-    operation = STATII_RESOURCE_MAP.get(resource)
-    if operation and "operation" in completed_df.columns:
-        completed_df = completed_df[completed_df["operation"].str.contains(operation, case=False, na=False)]
+    filter_cfg = STATII_FILTER_MAP.get(resource)
+    if filter_cfg:
+        col, value = filter_cfg["col"], filter_cfg["value"]
+        if col in completed_df.columns:
+            completed_df = completed_df[completed_df[col].str.contains(value, case=False, na=False)]
     completed_numbers = set(completed_df["number"].dropna().astype(str))
     return df[~df["Number"].astype(str).isin(completed_numbers)]
 
