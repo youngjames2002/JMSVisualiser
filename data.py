@@ -177,6 +177,7 @@ def load_data_sp():
 
     df["Earliest Process Date"] = pd.to_datetime(
         df["Earliest Process Date"],
+        format="mixed",
         dayfirst=True,
         errors="coerce"
     )
@@ -244,6 +245,7 @@ def load_data_ncr_sp():
     # fix dates
     df["Date"] = pd.to_datetime(
         df["Date"],
+        format="mixed",
         dayfirst=True,
         errors="coerce"
     )
@@ -263,6 +265,7 @@ def load_data_weld_sp():
 
     df["Date Requested"] = pd.to_datetime(
         df["Date Requested"],
+        format="mixed",
         dayfirst=True,
         errors="coerce"
     )
@@ -283,6 +286,7 @@ def load_data_machine_sp():
 
     df["Date Requested"] = pd.to_datetime(
         df["Date Requested"],
+        format="mixed",
         dayfirst=True,
         errors="coerce"
     )
@@ -303,6 +307,7 @@ def load_data_saw_sp():
 
     df["Date Requested"] = pd.to_datetime(
         df["Date Requested"],
+        format="mixed",
         dayfirst=True,
         errors="coerce"
     )
@@ -323,6 +328,7 @@ def load_data_rubber_sp():
 
     df["Date Requested"] = pd.to_datetime(
         df["Date Requested"],
+        format="mixed",
         dayfirst=True,
         errors="coerce"
     )
