@@ -648,7 +648,7 @@ def weld_table_filters(df):
     filtered_df = df[df["Week Ending"].isin(selected_weeks)]
     
     # strip back some unesscary fields and reorder
-    filtered_df["Date Requested"] = pd.to_datetime(filtered_df["Date Requested"], errors="coerce").dt.strftime("%d/%m/%y")
+    filtered_df["Date Requested"] = pd.to_datetime(filtered_df["Date Requested"], errors="coerce")
     filtered_df = filtered_df.drop(columns=["Operation", "Customer Grouped"], errors="ignore")
     filtered_df = filtered_df[
         [

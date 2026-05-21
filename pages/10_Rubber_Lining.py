@@ -25,4 +25,4 @@ weekly, y_max = build_saw_chart_data(clean_df)
 render_weekly_bar_chart(weekly, "Week Label", "Hours Plan", y_max=y_max, capacity=60, overdue_col="Overdue Hours")
 
 filtered_df = weld_table_filters(clean_df)
-st.dataframe(filtered_df)
+st.dataframe(filtered_df, column_config={"Date Requested": st.column_config.DateColumn("Date Requested", format="DD/MM/YY")})

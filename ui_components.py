@@ -777,7 +777,7 @@ def render_weld_table(df, site):
     if site is not None:
         df = df[df["Site"] == site]
     filtered_df = weld_table_filters(df)
-    st.dataframe(filtered_df)
+    st.dataframe(filtered_df, column_config={"Date Requested": st.column_config.DateColumn("Date Requested", format="DD/MM/YY")})
 
 def render_machine_table(df):
     filtered_df = machine_table_filters(df)
