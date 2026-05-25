@@ -39,7 +39,7 @@ def main():
 
     conn = get_connection()
     df   = load_ncr_data(conn)
-    df   = df[df["date"] >= date_filter]
+    df = df[(df["date"] >= date_filter) | (df["date"].isna())]
 
     render_page_header(date_filter)
 
