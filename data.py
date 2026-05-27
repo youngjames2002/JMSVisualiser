@@ -19,14 +19,43 @@ def get_statii_session_token() -> str:
 
 @st.cache_data(show_spinner=True)
 def statii_paint_data():
-    BASE_URL     = st.secrets["statii"]["BASE_URL"]
+    BASE_URL = st.secrets["statii"]["BASE_URL"]
     token = get_statii_session_token()
     response = requests.get(
         f"{BASE_URL}/report/sales_order_lines",
         headers={
             "Authorization": f"Bearer {token}",
-            "Accept": "application/csv",
+            "Accept": "application/json",
         },
+        params={"filters": json.dumps({
+            "live": True,
+            "specification": [
+                {"pattern": "RAL"},
+                {"pattern": "prime"},
+                {"pattern": "paint"},
+                {"pattern": "rl"},
+                {"pattern": "bs"},
+            ],
+        })},
+    )
+    response.raise_for_status()
+    data = response.json()["ResponseBody"]["data"]
+    return data
+
+@st.cache_data(show_spinner=True)
+def statii_galv_data():
+    BASE_URL = st.secrets["statii"]["BASE_URL"]
+    token = get_statii_session_token()
+    response = requests.get(
+        f"{BASE_URL}/report/sales_order_lines",
+        headers={
+            "Authorization": f"Bearer {token}",
+            "Accept": "application/json",
+        },
+        params={"filters": json.dumps({
+            "live": True,
+            "specification": {"pattern": "Galv"},
+        })},
     )
     response.raise_for_status()
     data = response.json()["ResponseBody"]["data"]

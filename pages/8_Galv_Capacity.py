@@ -6,10 +6,10 @@ from metrics import *
 page_setup("Galv Capacity")
 
 if st.button("Refresh Statii Data"):
-    statii_paint_data.clear()
+    statii_galv_data.clear()
     st.rerun()
 
-data = statii_paint_data()
+data = statii_galv_data()
 df = clean_galv_data(data)
 
 daily_view = st.toggle("Toggle Weekly View vs Daily View (Next Month)", value=False)
