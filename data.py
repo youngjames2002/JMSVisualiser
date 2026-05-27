@@ -32,6 +32,57 @@ def statii_paint_data():
     data = response.json()["ResponseBody"]["data"]
     return data
     
+@st.cache_data(show_spinner=True)
+def statii_bundle_jobs(operation):
+    BASE_URL     = st.secrets["statii"]["BASE_URL"]
+    token = get_statii_session_token()
+    response = requests.get(
+        f"{BASE_URL}/report/scheduling",
+        headers={
+            "Authorization": f"Bearer {token}",
+            "Accept": "application/json",
+        },
+        params={"filters": json.dumps({"live": True})},
+    )
+    data = response.json()["ResponseBody"]["data"]
+    df = pd.DataFrame(data["rows"], columns=data["columns"])
+    return df[df["operation"] == operation]
+
+def clean_statii_bundle_data(df: pd.DataFrame) -> pd.DataFrame:
+    df = df.copy()
+
+    # map column names — confirmed against /report/scheduling API response
+    df = df.rename(columns={
+        "number":         "Number",
+        "customer":       "Customer",
+        "so_no":          "S.O. No.",
+        "hours_plan":     "Hours Plan",
+        "date_requested": "Date Requested",
+        "operation":      "Operation",
+    })
+
+    df["Hours Plan"] = pd.to_numeric(df["Hours Plan"], errors="coerce").fillna(0)
+    df["Time Planned"] = df["Hours Plan"].apply(format_hours)
+    df["Date Requested"] = pd.to_datetime(df["Date Requested"], errors="coerce")
+
+    # apply company grouping (adds Customer Grouped)
+    df = apply_company_grouping(df)
+
+    # site logic: Bamford → Ballymena, everyone else → Kilrea
+    df["Site"] = (
+        df["Customer Grouped"]
+        .str.contains("BAMFORD", case=False, na=False)
+        .map({True: "Ballymena", False: "Kilrea"})
+    )
+
+    # week ending: next Friday after Date Requested, formatted to match existing schedule tools
+    df["Week Ending"] = (
+        df["Date Requested"] + pd.offsets.Week(weekday=4)
+    ).dt.strftime("%d/%m/%Y")
+
+    return df
+
+
 
 @st.cache_data(show_spinner=True)
 def statii_completed_jobs():
@@ -590,6 +641,10 @@ STATII_FILTER_MAP = {
     "weld":          {"col": "resource",  "value": "Welding"},
     "machine":       {"col": "resource",  "value": "Machining"},
     "rubber lining": {"col": "operation", "value": "Rubber lining"},
+    # operation values confirmed from /report/scheduling API — verify tube/fold if names differ
+    "flat":          {"col": "operation", "value": "Laser - Flat"},
+    "tube":          {"col": "operation", "value": "Laser - Tube"},
+    "fold":          {"col": "operation", "value": "Brake Press"},
 }
 
 def remove_completed_jobs_statii(df, resource):

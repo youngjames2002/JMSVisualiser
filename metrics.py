@@ -491,6 +491,7 @@ def build_saw_chart_data(df):
             weekly = pd.concat([weekly, new_row]).sort_values("Week Ending").reset_index(drop=True)
 
     weekly["Week Label"] = weekly["Week Ending"].dt.strftime("%d %b")
+    weekly["Hours"] = weekly["Hours Plan"].apply(format_hours)
     y_max = (weekly["Hours Plan"] + weekly["Overdue Hours"]).max() if not weekly.empty else 0
 
     return weekly, y_max
@@ -585,7 +586,8 @@ def build_fold_chart_data(df, site):
     )
     y_max = full_weekly["Estimated Fold Time (Hours)"].max() if not full_weekly.empty else 0
 
-    df = df[df["Site"] == site]
+    if site is not None:
+        df = df[df["Site"] == site]
 
     today = pd.Timestamp.today().normalize()
     this_week_end = today + pd.offsets.Week(weekday=4)
@@ -695,7 +697,8 @@ def machine_table_filters(df):
 def fold_table_filters(df, site):
     df = df.copy()
     # site filter
-    df = df[df["Site"] == site]
+    if site is not None:
+        df = df[df["Site"] == site]
     #strip columns and reorder
     df = df.drop(columns=["Completed?", "Customer Grouped", "Machine", "Estimated Bundle Time (Hours)", "Earliest Process Date", "Type", "Estimated Fold Time (Hours)", "Folding Required?"])
     df = df[[
