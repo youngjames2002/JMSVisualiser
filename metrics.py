@@ -691,7 +691,7 @@ def machine_table_filters(df):
     )
 
     df = df[df["Week Ending"].isin(selected_weeks)]
-    df = df.drop(columns=["Site", "Customer Grouped", "Hours Plan"], errors="ignore")
+    df = df.drop(columns=["Customer Grouped", "Hours Plan"], errors="ignore")
     return df
 
 def fold_table_filters(df, site):
