@@ -5,6 +5,68 @@ from io import BytesIO, StringIO
 import msal
 import requests
 import json
+import re
+
+@st.cache_data(show_spinner=True)
+def get_machine_schedule_labels() -> pd.DataFrame:
+    TENANT_ID = st.secrets["sharepoint"]["TENANT_ID"]
+    CLIENT_ID = st.secrets["sharepoint"]["CLIENT_ID"]
+    CLIENT_SECRET = st.secrets["sharepoint"]["CLIENT_SECRET"]
+    PLAN_ID = "OMiGy-Z9OE2SZd14RwvvfJYAAeYC"
+
+    OPERATION_CATEGORIES = {
+        "category1": "CNC Milling",
+        "category2": "Csking/Drilling",
+        "category3": "CNC Turning",
+        "category4": "Manual Turning",
+        "category5": "After Weld Machining",
+        "category16": "Flanges",
+    }
+    SITE_CATEGORIES = {
+        "category19": "Kilrea",
+        "category23": "Ballymena",
+    }
+
+    app = msal.ConfidentialClientApplication(
+        client_id=CLIENT_ID,
+        authority=f"https://login.microsoftonline.com/{TENANT_ID}",
+        client_credential=CLIENT_SECRET
+    )
+    token = app.acquire_token_for_client(scopes=["https://graph.microsoft.com/.default"])
+
+    if "access_token" not in token:
+        st.error(f"Planner auth failed: {token.get('error_description')}")
+        return pd.DataFrame()
+
+    headers = {"Authorization": f"Bearer {token['access_token']}"}
+
+    tasks_resp = requests.get(
+        f"https://graph.microsoft.com/v1.0/planner/plans/{PLAN_ID}/tasks",
+        headers=headers
+    )
+    tasks_resp.raise_for_status()
+    tasks = tasks_resp.json()["value"]
+
+    rows = []
+    for task in tasks:
+        match = re.match(r"(SO-\d+)", task["title"])
+        if not match:
+            continue
+
+        so = match.group(1)
+        applied = task.get("appliedCategories", {})
+
+        site = "No Site Assigned"
+        for k, v in SITE_CATEGORIES.items():
+            if k in applied:
+                site = v
+                break
+
+        operations = [OPERATION_CATEGORIES[k] for k in applied if k in OPERATION_CATEGORIES]
+        for operation in operations:
+            rows.append({"S.O. No.": so, "Operation": operation, "Site": site})
+
+    return pd.DataFrame(rows)
 
 @st.cache_data(ttl=1500)
 def get_statii_session_token() -> str:

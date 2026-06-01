@@ -11,9 +11,17 @@ if st.button("Refresh Statii Data"):
 df = load_data_machine_sp()
 df = remove_completed_jobs_statii(df, "machine")
 clean_df = clean_weld_saw_machine_data(df)
-kpi_df = build_machine_kpis(clean_df)
+
+# site logic from teams labels
+site_option = st.selectbox("Site", ["Both Sites", "No Site Assigned", "Ballymena", "Kilrea"], key="statii_site")
+clean_df = clean_df.drop(columns=["Site"])  # drop the old Bamford-based Site
+clean_df = clean_df.merge(get_machine_schedule_labels(), on=["S.O. No.", "Operation"], how="left")
+clean_df["Site"] = clean_df["Site"].fillna("No Site Assigned")
+if site_option != "Both Sites":
+    clean_df = clean_df[clean_df["Site"] == site_option]
 
 # KPIS HERE
+kpi_df = build_machine_kpis(clean_df)
 kpicol1, kpicol2, kpicol3 = st.columns(3)
 kpicol1.title("After Weld Machining")
 render_machine_kpi(kpi_df, "After Weld Machining", "late", kpicol1)
