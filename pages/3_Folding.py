@@ -8,7 +8,7 @@ page_setup("Folding")
 max_capacity = 80
 capacity = 80
 
-statii_toggle = st.toggle("Toggle Statii Data and Bundled Data")
+statii_toggle = st.toggle("Toggle Bundled Data and Statii Data")
 if statii_toggle:
     if st.button("Refresh Statii Data"):
         statii_bundle_jobs.clear()

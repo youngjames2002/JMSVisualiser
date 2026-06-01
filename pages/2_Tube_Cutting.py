@@ -7,7 +7,7 @@ page_setup("Tube Cutting")
 
 capacity=capacity_hours("Tube Cutting")
 
-statii_toggle = st.toggle("Toggle Statii Data and Bundled Data")
+statii_toggle = st.toggle("Toggle Bundled Data and Statii Data")
 if statii_toggle:
     if st.button("Refresh Statii Data"):
         statii_bundle_jobs.clear()

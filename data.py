@@ -6,6 +6,7 @@ import msal
 import requests
 import json
 
+@st.cache_data(ttl=1500)
 def get_statii_session_token() -> str:
     BASE_URL     = st.secrets["statii"]["BASE_URL"]
     CLIENT_SECRET = st.secrets["statii"]["CLIENT_SECRET"]
@@ -110,8 +111,6 @@ def clean_statii_bundle_data(df: pd.DataFrame) -> pd.DataFrame:
     ).dt.strftime("%d/%m/%Y")
 
     return df
-
-
 
 @st.cache_data(show_spinner=True)
 def statii_completed_jobs():

@@ -555,14 +555,20 @@ def render_weekly_bar_chart(
     overdue_col=None,
 ):
     has_overdue = bool(overdue_col and overdue_col in df.columns and df[overdue_col].sum() > 0)
+    use_capacity_colours = capacity is not None and not (isinstance(color, str) and color in df.columns)
 
     if isinstance(color, str) and color in df.columns:
         bar_colours = df[color]
-    elif highlight_week:
-        this_week = _this_week_label()
-        bar_colours = df[x_col].apply(lambda x: "#FFC300" if x == this_week else color)
     else:
-        bar_colours = color
+        if highlight_week:
+            this_week = _this_week_label()
+            bar_colours = df[x_col].apply(lambda x: "#FFC300" if x == this_week else color)
+        else:
+            bar_colours = pd.Series([color] * len(df), index=df.index)
+        if capacity is not None:
+            bar_colours = bar_colours.copy()
+            bar_colours[df[y_col] >= capacity * 0.75] = "#FF6600"
+            bar_colours[df[y_col] >= capacity] = "red"
 
     if capacity_borders and capacity is not None:
         border_colours = np.select(
@@ -578,7 +584,7 @@ def render_weekly_bar_chart(
     text_pos = "inside" if has_overdue else "outside"
     trace_kwargs = dict(
         x=df[x_col], y=df[y_col],
-        name="Scheduled",
+        name="This Week",
         text=bar_text, textposition=text_pos,
         hovertemplate=f"<b>%{{x}}</b><br>%{{y:.0f}} {hover_suffix}<extra></extra>",
         marker=marker,
@@ -605,6 +611,10 @@ def render_weekly_bar_chart(
             ),
         ))
 
+    if use_capacity_colours:
+        for label, col in [("Within capacity", color), ("Over 75% capacity", "#FF6600"), ("Over MAX capacity", "red")]:
+            fig.add_trace(go.Bar(x=[None], y=[None], name=label, marker_color=col, showlegend=True))
+
     if capacity is not None:
         cap_label = f"<b>Capacity £{capacity:,.0f}</b>" if text_format == "currency" else f"Capacity ({capacity})"
         fig.add_hline(y=capacity, line=dict(color="red", width=4, dash="dash"),
@@ -626,7 +636,7 @@ def render_weekly_bar_chart(
         paper_bgcolor="rgba(0,0,0,0)",
         yaxis=dict(title=y_title, gridcolor="rgba(0,0,0,0.05)", zeroline=False, range=[0, effective_y_max * 1.1]),
         xaxis=dict(title=x_title, showgrid=False),
-        showlegend=has_overdue,
+        showlegend=has_overdue or use_capacity_colours,
         font=dict(family="Segoe UI, sans-serif", size=13, color="#1a1a1a"),
     )
     st.plotly_chart(fig, use_container_width=True)
