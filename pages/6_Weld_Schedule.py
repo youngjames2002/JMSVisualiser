@@ -26,7 +26,7 @@ render_weld_kpi(kpi_df, "Ballymena", "this", kpicol2)
 render_weld_kpi(kpi_df, "Ballymena", "next", kpicol2)
 
 BMENA_CAPACITY = 238
-KILREA_CAPACITY = 370
+KILREA_CAPACITY = 322
 
 # apply site filter here (before chart but after kpis)
 site_option = st.selectbox("Site", ["Kilrea", "Ballymena", "Both Sites"])
