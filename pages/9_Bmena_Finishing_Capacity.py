@@ -23,28 +23,4 @@ render_weekly_bar_chart(
 )
 
 render_paint_table(weekly, df)
-
-st.markdown("## Finish Type Breakdown")
-
-def _finish_category(spec):
-    s = str(spec).lower()
-    if "e-coat" in s or "ecoat" in s or "e coat" in s:
-        return "E-coat"
-    if "protx" in s:
-        return "ProtX"
-    if "tjc" in s:
-        return "TJC"
-    if "galv" in s or "galvanised" in s:
-        return "Galvanised"
-    return "Other"
-
-df["Finish Type"] = df["Specification"].apply(_finish_category)
-pie_data = df.groupby("Finish Type", as_index=False)["Price"].sum()
-named = pie_data[pie_data["Finish Type"] != "Other"].sort_values("Price", ascending=False)
-other = pie_data[pie_data["Finish Type"] == "Other"]
-pie_data = pd.concat([named, other], ignore_index=True)
-
-fig = px.pie(pie_data, names="Finish Type", values="Price")
-fig.update_traces(textinfo="label+percent", hovertemplate="%{label}<br>£%{value:,.0f}<extra></extra>",
-                  sort=False)
-st.plotly_chart(fig, use_container_width=True)
+render_bmena_finish_pie(df)

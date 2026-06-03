@@ -818,3 +818,12 @@ def page_setup(title):
     tcol1, tcol2 = st.columns([1, 4])
     tcol2.title(title)
     render_logo(tcol1)
+
+def render_bmena_finish_pie(df):
+    st.markdown("## Finish Type Breakdown")
+    pie_data = bmena_finish_pie(df)
+
+    fig = px.pie(pie_data, names="Finish Type", values="Price")
+    fig.update_traces(textinfo="label+percent", hovertemplate="%{label}<br>£%{value:,.0f}<extra></extra>",
+                    sort=False)
+    st.plotly_chart(fig, use_container_width=True)

@@ -734,3 +734,23 @@ def tube_table_filters(df):
     # sort by num hours
     df = df.sort_values("Hours", ascending=False)
     return df
+
+def bmena_finish_pie(df):
+    df["Finish Type"] = df["Specification"].apply(_finish_category)
+    pie_data = df.groupby("Finish Type", as_index=False)["Price"].sum()
+    named = pie_data[pie_data["Finish Type"] != "Other"].sort_values("Price", ascending=False)
+    other = pie_data[pie_data["Finish Type"] == "Other"]
+    pie_data = pd.concat([named, other], ignore_index=True)
+    return pie_data
+
+def _finish_category(spec):
+    s = str(spec).lower()
+    if "e-coat" in s or "ecoat" in s or "e coat" in s:
+        return "E-coat"
+    if "protx" in s:
+        return "ProtX"
+    if "tjc" in s:
+        return "TJC"
+    if "galv" in s or "galvanised" in s:
+        return "Galvanised"
+    return "Other"
