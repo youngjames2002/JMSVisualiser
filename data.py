@@ -106,6 +106,25 @@ def statii_paint_data():
     return data
 
 @st.cache_data(show_spinner=True)
+def statii_ballymena_finish_data():
+    BASE_URL = st.secrets["statii"]["BASE_URL"]
+    token = get_statii_session_token()
+    response = requests.get(
+        f"{BASE_URL}/report/sales_order_lines",
+        headers={
+            "Authorization": f"Bearer {token}",
+            "Accept": "application/json",
+        },
+        params={"filters": json.dumps({
+            "live": True,
+            "customer": "#0000000000000072,Bamford Bus Company Ltd Trading as Wright Bus"
+        })}
+    )
+    response.raise_for_status()
+    data = response.json()["ResponseBody"]["data"]
+    return data
+
+@st.cache_data(show_spinner=True)
 def statii_galv_data():
     BASE_URL = st.secrets["statii"]["BASE_URL"]
     token = get_statii_session_token()
@@ -194,10 +213,10 @@ def clean_paint_data_from_api(api_response: dict) -> pd.DataFrame:
     df = pd.DataFrame(api_response["rows"], columns=api_response["columns"])
 
     # Filter out non-painted customers
-    # this customer filter can defo be done on the API call to reduce the amount of records pulled
-    df = df[~df["customer"].str.contains("Bamford|Wright|Cunningham", case=False, na=False)] 
-    # Filter for paint-related specifications
-    df = df[df["specification"].str.contains(r"\bRAL\b|\bprime\b|\bpaint\b|\bpainted\b|\bprimed\b|\brl\b|\bbs\b", case=False, na=False)]
+    # now done on api call
+    # df = df[~df["customer"].str.contains("Bamford|Wright|Cunningham", case=False, na=False)] 
+    # # Filter for paint-related specifications
+    # df = df[df["specification"].str.contains(r"\bRAL\b|\bprime\b|\bpaint\b|\bpainted\b|\bprimed\b|\brl\b|\bbs\b", case=False, na=False)]
 
     # Date handling — API returns ISO 8601 so no dayfirst needed
     df["date_promised"] = pd.to_datetime(df["date_promised"], errors="coerce")

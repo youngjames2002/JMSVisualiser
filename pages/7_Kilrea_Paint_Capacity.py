@@ -2,7 +2,7 @@ import streamlit as st
 from data import *
 from ui_components import *
 
-page_setup("Paint Capacity")
+page_setup("Kilrea Paint Capacity")
 
 if st.button("Refresh Statii Data"):
     statii_paint_data.clear()
