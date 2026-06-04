@@ -745,7 +745,7 @@ def bmena_finish_pie(df):
 
 def _finish_category(spec):
     s = str(spec).lower()
-    if "e-coat" in s or "ecoat" in s or "e coat" in s:
+    if "e-coat" in s or "ecoat" in s or "e coat" in s or "e- coat" in s:
         return "E-coat"
     if "protx" in s:
         return "ProtX"

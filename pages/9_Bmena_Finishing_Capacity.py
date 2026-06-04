@@ -6,12 +6,15 @@ from ui_components import *
 page_setup("Ballymena Finishing Capacity")
 
 if st.button("Refresh Statii Data"):
+    get_statii_session_token.clear()
     statii_ballymena_finish_data.clear()
     st.rerun()
 
 data = statii_ballymena_finish_data()
 df = clean_paint_data_from_api(data)
 df = df[~df["Specification"].str.contains("no finish", case=False, na=False)]
+df = df[~df["Specification"].str.contains("natural", case=False, na=False)]
+df = df[~df["Specification"].str.contains("mill", case=False, na=False)]
 
 weekly = build_paint_plot_data(day_week_toggle=False, df=df)
 

@@ -5,6 +5,7 @@ from ui_components import *
 page_setup("Kilrea Paint Capacity")
 
 if st.button("Refresh Statii Data"):
+    get_statii_session_token.clear()
     statii_paint_data.clear()
     st.rerun()
 
@@ -29,6 +30,7 @@ CLOSE_CALL = 30000
 # NEW VERSION - STRAIGHT FROM STATII
 data = statii_paint_data()
 df =  clean_paint_data_from_api(data)
+df = df[~df["Customer"].str.contains("Bamford", case=False, na=False)]
 # st.dataframe(df) # DEBUG
 
 daily_view = st.toggle("Toggle Weekly View vs Daily View (Next Month)", value=False)

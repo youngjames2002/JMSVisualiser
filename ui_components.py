@@ -827,3 +827,8 @@ def render_bmena_finish_pie(df):
     fig.update_traces(textinfo="label+percent", hovertemplate="%{label}<br>£%{value:,.0f}<extra></extra>",
                     sort=False)
     st.plotly_chart(fig, use_container_width=True)
+
+    # other
+    st.markdown("## Other")
+    other_df = df[df["Finish Type"] == "Other"]
+    st.dataframe(other_df)
