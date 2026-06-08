@@ -1,8 +1,20 @@
+import json
+import os
 import streamlit as st
 from data import *
 from ui_components import *
 
 page_setup("Weld Schedule")
+
+OVERRIDES_PATH = os.path.join(os.path.dirname(__file__), "..", "weld_site_overrides.json")
+
+def load_overrides():
+    try:
+        with open(OVERRIDES_PATH, "r") as f:
+            return json.load(f)
+    except Exception:
+        return {}
+
 
 if st.button("Refresh Statii Data"):
     statii_completed_jobs.clear()
@@ -12,6 +24,14 @@ df = load_data_weld_sp()
 df = remove_completed_jobs_statii(df, "weld")
 
 clean_df = clean_weld_saw_machine_data(df)
+
+# apply site overrides from file
+overrides = load_overrides()
+for so_num, override_site in overrides.items():
+    mask = clean_df["S.O. No."] == so_num
+    if mask.any():
+        clean_df.loc[mask, "Site"] = override_site
+
 kpi_df = build_weld_kpis(clean_df)
 
 # KPIS HERE
@@ -43,4 +63,3 @@ weekly, y_max = build_weld_chart_data(clean_df, site)
 render_weekly_bar_chart(weekly, "Week Label", "Hours Plan", y_max=y_max, capacity=capacity, overdue_col="Overdue Hours")
 
 render_weld_table(clean_df, site)
-    
