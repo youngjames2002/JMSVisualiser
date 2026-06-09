@@ -5,8 +5,8 @@ from metrics import *
 
 page_setup("Galv Capacity")
 
-if st.button("Refresh Statii Data"):
-    statii_galv_data.clear()
+if st.button("Refresh Data"):
+    st.cache_data.clear()
     st.rerun()
 
 data = statii_galv_data()

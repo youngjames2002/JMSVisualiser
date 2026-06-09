@@ -4,8 +4,8 @@ from ui_components import *
 
 page_setup("Machining Schedule")
 
-if st.button("Refresh Statii Data"):
-    statii_completed_jobs.clear()
+if st.button("Refresh Data"):
+    st.cache_data.clear()
     st.rerun()
 
 df = load_data_machine_sp()

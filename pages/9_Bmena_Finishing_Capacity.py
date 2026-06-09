@@ -5,9 +5,8 @@ from ui_components import *
 
 page_setup("Ballymena Finishing Capacity")
 
-if st.button("Refresh Statii Data"):
-    get_statii_session_token.clear()
-    statii_ballymena_finish_data.clear()
+if st.button("Refresh Data"):
+    st.cache_data.clear()
     st.rerun()
 
 data = statii_ballymena_finish_data()

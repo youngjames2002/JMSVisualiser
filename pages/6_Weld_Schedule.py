@@ -16,8 +16,8 @@ def load_overrides():
         return {}
 
 
-if st.button("Refresh Statii Data"):
-    statii_completed_jobs.clear()
+if st.button("Refresh Data"):
+    st.cache_data.clear()
     st.rerun()
 
 df = load_data_weld_sp()

@@ -4,8 +4,8 @@ from ui_components import *
 
 page_setup("Rubber Lining Schedule")
 
-if st.button("Refresh Statii Data"):
-    statii_completed_jobs.clear()
+if st.button("Refresh Data"):
+    st.cache_data.clear()
     st.rerun()
 
 df = load_data_rubber_sp()

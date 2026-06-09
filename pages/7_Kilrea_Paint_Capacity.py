@@ -4,9 +4,8 @@ from ui_components import *
 
 page_setup("Kilrea Paint Capacity")
 
-if st.button("Refresh Statii Data"):
-    get_statii_session_token.clear()
-    statii_paint_data.clear()
+if st.button("Refresh Data"):
+    st.cache_data.clear()
     st.rerun()
 
 CAPACITY = 35000

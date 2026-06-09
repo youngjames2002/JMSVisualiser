@@ -9,8 +9,8 @@ capacity=capacity_hours("Flat Cutting")
 
 statii_toggle = st.toggle("Toggle Bundled Data and Statii Data")
 if statii_toggle:
-    if st.button("Refresh Statii Data"):
-        statii_bundle_jobs.clear()
+    if st.button("Refresh Data"):
+        st.cache_data.clear()
         st.rerun()
     st.title("Overview - Statii Data")
     df = statii_bundle_jobs("Laser - Flat")

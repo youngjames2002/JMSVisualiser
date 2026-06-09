@@ -31,8 +31,8 @@ def inject_styles():
 def main():
     inject_styles()
 
-    if st.button("Refresh Statii Data"):
-        load_so_statii.clear()
+    if st.button("Refresh Data"):
+        st.cache_data.clear()
         st.rerun()
 
     date_filter = render_date_filter()
