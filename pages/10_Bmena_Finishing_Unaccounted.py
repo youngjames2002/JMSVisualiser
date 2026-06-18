@@ -1,5 +1,5 @@
 import streamlit as st
-from data import *
+from data_v2 import load_data_Bmena_sp
 from ui_components import *
 
 page_setup("Ballymena Unaccounted Finishing Jobs")

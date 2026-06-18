@@ -236,7 +236,7 @@ def split_by_urgency(df):
     future_df = df[df["Week"] > current_week]
     return late_df, week_df, future_df
 
-def _this_and_next_friday():
+def this_and_next_friday():
     today = pd.Timestamp.today().normalize()
     this_week = (today + pd.offsets.Week(weekday=4)).normalize()
     next_week = this_week + pd.Timedelta(days=7)
