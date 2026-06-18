@@ -250,7 +250,7 @@ def build_tube_kpis(df):
     df["Week Ending"] = pd.to_datetime(df["Week Ending"], dayfirst=True, errors="coerce")
     df["Estimated Bundle Time (Hours)"] = pd.to_numeric(df["Estimated Bundle Time (Hours)"], errors="coerce").fillna(0)
 
-    this_week, next_week = _this_and_next_friday()
+    this_week, next_week = this_and_next_friday()
     hours_col = "Estimated Bundle Time (Hours)"
 
     late_hours = df[df["Week Ending"] < this_week][hours_col].sum()
@@ -273,7 +273,7 @@ def build_saw_kpis(df):
     df["Week Ending"] = pd.to_datetime(df["Week Ending"], dayfirst=True, errors="coerce")
     df["Hours Plan"] = pd.to_numeric(df["Hours Plan"], errors="coerce").fillna(0)
 
-    this_week, next_week = _this_and_next_friday()
+    this_week, next_week = this_and_next_friday()
     hours_col = "Hours Plan"
 
     late_hours = df[df["Week Ending"] < this_week][hours_col].sum()
@@ -299,7 +299,7 @@ def _build_site_kpis(df, group_col, hours_col):
     df["Week Ending"] = pd.to_datetime(df["Week Ending"], dayfirst=True, errors="coerce")
     df[hours_col] = pd.to_numeric(df[hours_col], errors="coerce").fillna(0)
 
-    this_week, next_week = _this_and_next_friday()
+    this_week, next_week = this_and_next_friday()
 
     late_series = df[df["Week Ending"] < this_week].groupby(group_col)[hours_col].sum()
     this_series = df[df["Week Ending"] == this_week].groupby(group_col)[hours_col].sum()
