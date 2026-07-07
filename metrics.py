@@ -657,14 +657,14 @@ def weld_table_filters(df):
             "S.O. No.",
             "Number",
             "Customer",
-            "Hours Plan",
+            "Customer P.O. No.",
             "Time Planned",
             "Date Requested",
             "Week Ending",
             "Site"
         ]
     ]
-    filtered_df = filtered_df.sort_values("Hours Plan", ascending=False)
+    # filtered_df = filtered_df.sort_values("Hours Plan", ascending=False)
     
     return filtered_df
 

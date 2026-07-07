@@ -16,5 +16,8 @@ render_logo(tcol1)
 if st.user.is_logged_in:
     st.success("Login Successful")
     st.write("Use Sidebar to navigate app")
+elif st.secrets.get("TEST_MODE", False):
+    st.info("Test mode — login skipped")
+    st.write("Use Sidebar to navigate app")
 else:
     st.login("microsoft")

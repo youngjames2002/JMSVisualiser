@@ -693,7 +693,10 @@ def clean_weld_saw_machine_data(df):
     clean_df.drop(['PlannerDueDate', 'Task Description', 'PlannerTaskID', 'PlannerCreated', 'CreatedOn'], axis=1, inplace=True)
     #add site logic - bamford = bmena, other = kilrea
     clean_df["Site"] = clean_df["Customer Grouped"].str.contains("BAMFORD", case=False, na=False).map({True: "Ballymena", False: "Kilrea"})
-    #add week ending logic
+    # link arms are bamford but actually processed in kilrea
+    mask = clean_df["Customer P.O. No."].str.contains("Link Arms", case=False, na=False)
+    clean_df.loc[mask, "Site"] = "Kilrea"
+#add week ending logic
     clean_df["Week Ending"] = (
         pd.to_datetime(clean_df["Date Requested"]) + pd.offsets.Week(weekday=4)
     ).dt.strftime("%d/%m/%Y")

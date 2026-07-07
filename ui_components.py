@@ -809,8 +809,10 @@ def page_setup(title):
     import plotly.io as pio
     pio.templates.default = "simple_white"
 
-    from login import require_auth
-    require_auth()
+    # TEST_MODE lives only in local secrets.toml; deployed secrets omit it, so auth runs live
+    if not st.secrets.get("TEST_MODE", False):
+        from login import require_auth
+        require_auth()
 
     st.set_page_config(layout="wide", page_title="JMS Data Visualiser")
     load_css("stylesheet.css")
