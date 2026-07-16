@@ -170,6 +170,7 @@ def clean_statii_bundle_data(df: pd.DataFrame) -> pd.DataFrame:
         "hours_plan":     "Hours Plan",
         "date_requested": "Date Requested",
         "operation":      "Operation",
+        "customer_po_no": "Customer P.O. No."
     })
 
     df["Hours Plan"] = pd.to_numeric(df["Hours Plan"], errors="coerce").fillna(0)

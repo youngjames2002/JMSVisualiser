@@ -728,7 +728,7 @@ def tube_table_filters(df):
         "Week Ending",
         "Sales Orders Included in Bundle",
         "Type",
-        "Machine"
+        "Machine",
     ]]
 
     # sort by num hours
