@@ -635,10 +635,10 @@ def weld_table_filters(df):
 
     # Get this week's Friday
     today = pd.Timestamp.today().normalize()
-    this_week = (today + pd.offsets.Week(weekday=4)).strftime("%d/%m/%Y")
+    this_week_dt = today + pd.offsets.Week(weekday=4)
 
-    # Set default (only if it exists in list)
-    default_week = [this_week] if this_week in weeks else []
+    # Default to this week plus any overdue (past) weeks still in the data
+    default_week = [w for w, d in zip(weeks, weeks_dt) if d <= this_week_dt]
 
     selected_weeks = st.multiselect(
         "Filter By Week(s)",
@@ -664,8 +664,8 @@ def weld_table_filters(df):
             "Site"
         ]
     ]
-    # filtered_df = filtered_df.sort_values("Hours Plan", ascending=False)
-    
+    filtered_df = filtered_df.sort_values("Date Requested", ascending=True)
+
     return filtered_df
 
 def machine_table_filters(df):
@@ -678,10 +678,10 @@ def machine_table_filters(df):
 
     # Get this week's Friday
     today = pd.Timestamp.today().normalize()
-    this_week = (today + pd.offsets.Week(weekday=4)).strftime("%d/%m/%Y")
+    this_week_dt = today + pd.offsets.Week(weekday=4)
 
-    # Set default (only if it exists in list)
-    default_week = [this_week] if this_week in weeks else []
+    # Default to this week plus any overdue (past) weeks still in the data
+    default_week = [w for w, d in zip(weeks, weeks_dt) if d <= this_week_dt]
 
     selected_weeks = st.multiselect(
         "Filter By Week(s)",
@@ -692,6 +692,7 @@ def machine_table_filters(df):
 
     df = df[df["Week Ending"].isin(selected_weeks)]
     df = df.drop(columns=["Customer Grouped", "Hours Plan"], errors="ignore")
+    df = df.sort_values("Date Requested", ascending=True)
     return df
 
 def fold_table_filters(df, site):
