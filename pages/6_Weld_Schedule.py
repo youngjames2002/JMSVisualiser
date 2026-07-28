@@ -33,6 +33,7 @@ for so_num, override_site in overrides.items():
         clean_df.loc[mask, "Site"] = override_site
 
 kpi_df = build_weld_kpis(clean_df)
+outsourced_hours = total_hours_for_group(clean_df, "Site", "Outsourced", "Hours Plan")
 
 # KPIS HERE
 kpicol1, kpicol2 = st.columns(2)
@@ -45,14 +46,24 @@ render_weld_kpi(kpi_df, "Ballymena", "late", kpicol2)
 render_weld_kpi(kpi_df, "Ballymena", "this", kpicol2)
 render_weld_kpi(kpi_df, "Ballymena", "next", kpicol2)
 
+if outsourced_hours > 0:
+    st.title("Outsourced")
+    render_total_kpi(outsourced_hours, "Total Outsourced Hours", st)
+
 BMENA_CAPACITY = 238
 KILREA_CAPACITY = 322
 
 # apply site filter here (before chart but after kpis)
-site_option = st.selectbox("Site", ["Kilrea", "Ballymena", "Both Sites"])
-if site_option == "Both Sites":
+site_option = st.selectbox("Site", ["Kilrea", "Ballymena", "Outsourced", "Both Sites", "Total"])
+if site_option == "Total":
     site = None
     capacity = BMENA_CAPACITY + KILREA_CAPACITY
+elif site_option == "Both Sites":
+    site = ["Kilrea", "Ballymena"]
+    capacity = BMENA_CAPACITY + KILREA_CAPACITY
+elif site_option == "Outsourced":
+    site = site_option
+    capacity = None
 else:
     site = site_option
     capacity = BMENA_CAPACITY if site == "Ballymena" else KILREA_CAPACITY

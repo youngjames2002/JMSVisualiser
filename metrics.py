@@ -322,6 +322,14 @@ def build_weld_kpis(df):
     return _build_site_kpis(df, group_col="Site", hours_col="Hours Plan")
 
 
+def total_hours_for_group(df, group_col, group_val, hours_col):
+    """Sum raw hours for a single group value, not split by week (e.g. total Outsourced hours)."""
+    df = df.copy()
+    df.columns = df.columns.str.strip()
+    df[hours_col] = pd.to_numeric(df[hours_col], errors="coerce").fillna(0)
+    return df.loc[df[group_col] == group_val, hours_col].sum()
+
+
 def build_fold_kpis(df):
     return _build_site_kpis(df, group_col="Site", hours_col="Estimated Fold Time (Hours)")
 
@@ -349,9 +357,12 @@ def build_weld_chart_data(df, site):
     )
     y_max = full_weekly["Hours Plan"].max() if not full_weekly.empty else 0
 
-    # filter to only appropriate site (None = both sites)
+    # filter to only appropriate site(s) (None = all sites; list = multiple sites)
     if site is not None:
-        df = df[df["Site"] == site]
+        if isinstance(site, list):
+            df = df[df["Site"].isin(site)]
+        else:
+            df = df[df["Site"] == site]
 
     # Determine this week's Friday ending date
     today = pd.Timestamp.today().normalize()

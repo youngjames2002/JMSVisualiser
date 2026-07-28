@@ -745,6 +745,11 @@ def render_kpi_card(kpi_df, lookup_col, lookup_val, week, col):
     _kpi_card(col, title, value)
 
 
+def render_total_kpi(total_hours, title, col):
+    """KPI card showing a raw total (not split by late/this/next week)."""
+    _kpi_card(col, title, format_hours(total_hours))
+
+
 def render_single_kpi(kpi_df, week, col=None):
     """
     KPI card renderer for ungrouped KPI tables (tube, saw, flat).
@@ -785,7 +790,10 @@ def render_saw_bundle_kpi(kpi_df, week):
 
 def render_weld_table(df, site):
     if site is not None:
-        df = df[df["Site"] == site]
+        if isinstance(site, list):
+            df = df[df["Site"].isin(site)]
+        else:
+            df = df[df["Site"] == site]
     filtered_df = weld_table_filters(df)
     st.dataframe(filtered_df, column_config={"Date Requested": st.column_config.DateColumn("Date Requested", format="DD/MM/YY")})
 
