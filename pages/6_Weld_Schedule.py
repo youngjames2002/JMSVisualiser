@@ -51,7 +51,7 @@ if outsourced_hours > 0:
     render_total_kpi(outsourced_hours, "Total Outsourced Hours", st)
 
 BMENA_CAPACITY = 238
-KILREA_CAPACITY = 322
+KILREA_CAPACITY = 288
 
 # apply site filter here (before chart but after kpis)
 site_option = st.selectbox("Site", ["Kilrea", "Ballymena", "Outsourced", "Both Sites", "Total"])
