@@ -747,6 +747,22 @@ def tube_table_filters(df):
     df = df.sort_values("Hours", ascending=False)
     return df
 
+def build_order_value_by_month(df, filter_date):
+    df = df[["number", "value", "date_promised"]].copy()
+    df["value"] = pd.to_numeric(df["value"], errors="coerce")
+    df["date_promised"] = pd.to_datetime(df["date_promised"])
+    df["month"] = df["date_promised"].dt.to_period("M")
+    df["month_label"] = df["month"].dt.strftime("%B %Y")
+
+    filter_month_start = pd.Timestamp(filter_date).replace(day=1)
+    df = df[df["date_promised"] >= filter_month_start]
+
+    value_by_month = df.groupby(["month", "month_label"], as_index=False)["value"].sum().sort_values("month")
+    current_month = pd.Timestamp.now().to_period("M")
+    value_by_month["bar_color"] = value_by_month["month"].apply(lambda m: "#FFC300" if m == current_month else "#2E86C1")
+
+    return value_by_month
+
 def bmena_finish_pie(df):
     df["Finish Type"] = df["Specification"].apply(_finish_category)
     pie_data = df.groupby("Finish Type", as_index=False)["Price"].sum()
