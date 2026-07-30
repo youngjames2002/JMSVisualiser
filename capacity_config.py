@@ -1,10 +1,12 @@
 import json
-import os
 import streamlit as st
+from data import download_excel_from_sharepoint, upload_file_to_sharepoint
 
-CONFIG_PATH = os.path.join(os.path.dirname(__file__), "capacity_config.json")
+SITE_NAME = "JMSEngineeringTeam"
+CONFIG_FILE_PATH = "JMS Engineering Team SharePoint/JMS Master Schedule/visualiserConfig/capacity_config.json"
 
-# Fallback values, used until a site edits and persists its own value
+# Fallback values, used until a site edits and persists its own value,
+# or if the SharePoint file can't be reached
 DEFAULT_CAPACITIES = {
     "weld_ballymena": 256,
     "weld_kilrea": 288,
@@ -30,16 +32,23 @@ LABELS = {
 
 def load_capacities():
     try:
-        with open(CONFIG_PATH, "r") as f:
-            saved = json.load(f)
+        bytes_io = download_excel_from_sharepoint(SITE_NAME, CONFIG_FILE_PATH)
+        saved = json.loads(bytes_io.read())
     except Exception:
         saved = {}
     return {**DEFAULT_CAPACITIES, **saved}
 
 
 def save_capacities(capacities):
-    with open(CONFIG_PATH, "w") as f:
-        json.dump(capacities, f, indent=2)
+    try:
+        upload_file_to_sharepoint(
+            SITE_NAME, CONFIG_FILE_PATH,
+            json.dumps(capacities, indent=2).encode("utf-8"),
+            content_type="application/json",
+        )
+        download_excel_from_sharepoint.clear(SITE_NAME, CONFIG_FILE_PATH)
+    except Exception:
+        st.warning("Could not save capacity change to SharePoint - it won't persist.")
 
 
 def get_capacity(key):
@@ -48,7 +57,7 @@ def get_capacity(key):
 
 def capacity_input(key, col=None, step=1, min_value=0, width=110):
     """Inline, editable capacity value. Renders a small number_input pre-filled
-    with the current value and persists any change to capacity_config.json."""
+    with the current value and persists any change to capacity_config.json on SharePoint."""
     target = col if col is not None else st
     capacities = load_capacities()
     current_value = int(capacities.get(key, DEFAULT_CAPACITIES.get(key, 0)))

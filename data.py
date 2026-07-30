@@ -325,6 +325,46 @@ def download_excel_from_sharepoint(site_name: str, file_path:str) -> BytesIO:
 
     return BytesIO(file_response.content)
 
+def upload_file_to_sharepoint(site_name: str, file_path: str, content: bytes, content_type: str = "application/octet-stream") -> bool:
+    # upload/overwrite a small file (<4MB) on sharepoint via graph api
+
+    TENANT_ID = st.secrets["sharepoint"]["TENANT_ID"]
+    CLIENT_ID = st.secrets["sharepoint"]["CLIENT_ID"]
+    CLIENT_SECRET = st.secrets["sharepoint"]["CLIENT_SECRET"]
+    SHAREPOINT_SITE = st.secrets["sharepoint"]["SHAREPOINT_SITE"]
+
+    AUTHORITY = f"https://login.microsoftonline.com/{TENANT_ID}"
+    SCOPE = ["https://graph.microsoft.com/.default"]
+
+    app = msal.ConfidentialClientApplication(
+        client_id=CLIENT_ID,
+        authority=AUTHORITY,
+        client_credential=CLIENT_SECRET
+    )
+    token = app.acquire_token_for_client(scopes=SCOPE)
+    if "access_token" not in token:
+        st.error("Authentication failed")
+        return False
+
+    headers = {"Authorization": f"Bearer {token['access_token']}"}
+
+    site_url = f"https://graph.microsoft.com/v1.0/sites/{SHAREPOINT_SITE}:/sites/{site_name}:/"
+    site_response = requests.get(site_url, headers=headers)
+    if site_response.status_code != 200:
+        st.error("Site lookup failed")
+        return False
+
+    site_id = site_response.json()["id"]
+
+    file_url = f"https://graph.microsoft.com/v1.0/sites/{site_id}/drive/root:/{file_path}:/content"
+    upload_response = requests.put(
+        file_url,
+        headers={**headers, "Content-Type": content_type},
+        data=content,
+    )
+    upload_response.raise_for_status()
+    return True
+
 @st.cache_data(show_spinner=True)
 def load_data_sp():
     bytes_io = download_excel_from_sharepoint(
