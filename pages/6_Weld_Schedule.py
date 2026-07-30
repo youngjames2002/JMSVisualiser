@@ -50,7 +50,7 @@ if outsourced_hours > 0:
     st.title("Outsourced")
     render_total_kpi(outsourced_hours, "Total Outsourced Hours", st)
 
-BMENA_CAPACITY = 238
+BMENA_CAPACITY = 256
 KILREA_CAPACITY = 288
 
 # apply site filter here (before chart but after kpis)
