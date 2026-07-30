@@ -50,24 +50,27 @@ if outsourced_hours > 0:
     st.title("Outsourced")
     render_total_kpi(outsourced_hours, "Total Outsourced Hours", st)
 
-BMENA_CAPACITY = 256
-KILREA_CAPACITY = 288
-
 # apply site filter here (before chart but after kpis)
 site_option = st.selectbox("Site", ["Kilrea", "Ballymena", "Outsourced", "Both Sites", "Total"])
 if site_option == "Total":
     site = None
-    capacity = BMENA_CAPACITY + KILREA_CAPACITY
 elif site_option == "Both Sites":
     site = ["Kilrea", "Ballymena"]
-    capacity = BMENA_CAPACITY + KILREA_CAPACITY
 elif site_option == "Outsourced":
     site = site_option
-    capacity = None
 else:
     site = site_option
-    capacity = BMENA_CAPACITY if site == "Ballymena" else KILREA_CAPACITY
-st.markdown(f"""<h3>Currently showing: {site_option}<h3>""", unsafe_allow_html=True)
+
+title_col, cap_col = st.columns([4, 1])
+title_col.markdown(f"""<h3>Currently showing: {site_option}<h3>""", unsafe_allow_html=True)
+if site_option == "Kilrea":
+    capacity = capacity_input("weld_kilrea", cap_col)
+elif site_option == "Ballymena":
+    capacity = capacity_input("weld_ballymena", cap_col)
+elif site_option in ("Both Sites", "Total"):
+    capacity = get_capacity("weld_kilrea") + get_capacity("weld_ballymena")
+else:
+    capacity = None
 
 # chart by week
 weekly, y_max = build_weld_chart_data(clean_df, site)

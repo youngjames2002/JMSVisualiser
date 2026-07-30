@@ -4,6 +4,7 @@ import plotly.express as px
 import pandas as pd
 from metrics import *
 from data import *
+from capacity_config import *
 import plotly.graph_objects as go
 import datetime
 from PIL import Image
@@ -613,8 +614,8 @@ def render_weekly_bar_chart(
         ))
 
     if use_capacity_colours:
-        for label, col in [("Within capacity", color), ("Over 75% capacity", "#FF6600"), ("Over MAX capacity", "red")]:
-            fig.add_trace(go.Bar(x=[None], y=[None], name=label, marker_color=col, showlegend=True))
+        for label, legend_colour in [("Within capacity", color), ("Over 75% capacity", "#FF6600"), ("Over MAX capacity", "red")]:
+            fig.add_trace(go.Bar(x=[None], y=[None], name=label, marker_color=legend_colour, showlegend=True))
 
     if capacity is not None:
         cap_label = f"<b>{capacity_label} £{capacity:,.0f}</b>" if text_format == "currency" else f"{capacity_label} ({capacity})"

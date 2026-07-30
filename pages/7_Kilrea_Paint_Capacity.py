@@ -8,9 +8,6 @@ if st.button("Refresh Data"):
     st.cache_data.clear()
     st.rerun()
 
-CAPACITY = 35000
-CLOSE_CALL = 30000
-
 # OLD VERSION REQUIRING MANUAL DUMP IN
 # st.markdown("""
 # Go to Sales Order Lines in Statii and export the report **'Paint Capacity'**  
@@ -33,10 +30,14 @@ df = df[~df["Customer"].str.contains("Bamford", case=False, na=False)]
 # st.dataframe(df) # DEBUG
 
 daily_view = st.toggle("Toggle Weekly View vs Daily View (Next Month)", value=False)
-capacity = CAPACITY / 4 if daily_view else CAPACITY
-close_call = CLOSE_CALL / 4 if daily_view else CLOSE_CALL
 
 weekly = build_paint_plot_data(daily_view, df)
+
+cap_col, _ = st.columns([1, 5])
+CAPACITY = capacity_input("paint_capacity", cap_col, step=500)
+capacity = CAPACITY / 4 if daily_view else CAPACITY
+close_call = capacity * 0.75  # close-call threshold is always 75% of capacity
+
 weekly.loc[weekly["Price"] >= close_call, "colour"] = "orange"
 weekly.loc[weekly["Price"] > capacity, "colour"] = "red"
 

@@ -22,7 +22,9 @@ render_saw_bundle_kpi(kpi_df, "next")
 
 # chart by week
 weekly, y_max = build_saw_chart_data(clean_df)
-render_weekly_bar_chart(weekly, "Week Label", "Hours Plan", y_max=y_max, capacity=60, overdue_col="Overdue Hours")
+cap_col, _ = st.columns([1, 5])
+rubber_capacity = capacity_input("rubber_lining", cap_col)
+render_weekly_bar_chart(weekly, "Week Label", "Hours Plan", y_max=y_max, capacity=rubber_capacity, overdue_col="Overdue Hours")
 
 filtered_df = weld_table_filters(clean_df)
 st.dataframe(filtered_df, column_config={"Date Requested": st.column_config.DateColumn("Date Requested", format="DD/MM/YY")})

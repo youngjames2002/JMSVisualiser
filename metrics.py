@@ -209,17 +209,16 @@ def calculate_paint_overflow(weekly, capacity, new_job_value):
 
     return next_week_available
 
-# This is hardcoded for now but could change to be read from somewhere
-# if needed and would be changing often
+_CAPACITY_HOURS_KEYS = {
+    "Tube Cutting": "tube_cutting",
+    "Flat Cutting": "flat_cutting",
+    "Folding": "folding",
+}
+
 def capacity_hours(section_name):
-    if section_name == "Tube Cutting":
-        return 28
-    elif section_name == "Flat Cutting":
-        return 148
-    elif section_name == "Folding":
-        return 190
-    else:
-        return 0
+    from capacity_config import get_capacity
+    key = _CAPACITY_HOURS_KEYS.get(section_name)
+    return get_capacity(key) if key else 0
     
 def split_by_urgency(df):
     today = pd.Timestamp.today().normalize()

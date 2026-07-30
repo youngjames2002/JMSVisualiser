@@ -5,9 +5,6 @@ from ui_components import *
 
 page_setup("Folding")
 
-max_capacity = 80
-capacity = 80
-
 statii_toggle = st.toggle("Toggle Bundled Data and Statii Data")
 if statii_toggle:
     if st.button("Refresh Data"):
@@ -30,13 +27,12 @@ if statii_toggle:
     render_weld_kpi(kpi_df, "Ballymena", "next", kpicol2)
 
     site_option = st.selectbox("Site", ["Kilrea", "Ballymena", "Both Sites"], key="statii_site")
-    if site_option == "Both Sites":
-        site = None
-        capacity = max_capacity * 2
-    else:
-        site = site_option
-        capacity = max_capacity
-    st.markdown(f"""<h3>Currently showing: {site_option}<h3>""", unsafe_allow_html=True)
+    site = None if site_option == "Both Sites" else site_option
+
+    title_col, cap_col = st.columns([4, 1])
+    title_col.markdown(f"""<h3>Currently showing: {site_option}<h3>""", unsafe_allow_html=True)
+    max_capacity = capacity_input("folding", cap_col)
+    capacity = max_capacity * 2 if site_option == "Both Sites" else max_capacity
 
     # build and render chart
     if site is not None:
@@ -70,13 +66,12 @@ else:
     render_weld_kpi(kpi_df, "Ballymena", "next", kpicol2)
 
     site_option = st.selectbox("Site", ["Kilrea", "Ballymena", "Both Sites"], key="bundle_site")
-    if site_option == "Both Sites":
-        site = None
-        capacity = max_capacity * 2
-    else:
-        site = site_option
-        capacity = max_capacity
-    st.markdown(f"""<h3>Currently showing: {site_option}<h3>""", unsafe_allow_html=True)
+    site = None if site_option == "Both Sites" else site_option
+
+    title_col, cap_col = st.columns([4, 1])
+    title_col.markdown(f"""<h3>Currently showing: {site_option}<h3>""", unsafe_allow_html=True)
+    max_capacity = capacity_input("folding", cap_col)
+    capacity = max_capacity * 2 if site_option == "Both Sites" else max_capacity
 
     # chart here
     weekly, y_max = build_fold_chart_data(clean_df, site)

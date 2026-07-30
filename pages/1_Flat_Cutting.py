@@ -5,8 +5,6 @@ from ui_components import *
 
 page_setup("Flat Cutting")
 
-capacity=capacity_hours("Flat Cutting")
-
 statii_toggle = st.toggle("Toggle Bundled Data and Statii Data")
 if statii_toggle:
     if st.button("Refresh Data"):
@@ -25,6 +23,8 @@ if statii_toggle:
 
     # build and render chart
     weekly, y_max = build_saw_chart_data(df)
+    cap_col, _ = st.columns([1, 5])
+    capacity = capacity_input("flat_cutting", cap_col)
     render_weekly_bar_chart(
         weekly, "Week Label", "Hours Plan",
         capacity=capacity, show_75_line=True,
@@ -50,7 +50,8 @@ else:
     render_saw_bundle_kpi(kpi_df, "next")
 
     # chart here
-
+    cap_col, _ = st.columns([1, 5])
+    capacity = capacity_input("flat_cutting", cap_col)
     render_weekly_bar_chart(
         weekly, "Week Label", "Estimated Bundle Time (Hours)",
         capacity=capacity, show_75_line=True,

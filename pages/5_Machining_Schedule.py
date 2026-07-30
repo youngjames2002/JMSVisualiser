@@ -61,5 +61,7 @@ weekly, y_max = build_machine_chart_data(clean_df, operation_filter)
 if weekly.empty:
     st.warning("No data selected")
 else:
-    render_weekly_bar_chart(weekly, "Week Label", "Hours Plan", y_max=y_max, capacity=114, overdue_col="Overdue Hours")
+    cap_col, _ = st.columns([1, 5])
+    machining_capacity = capacity_input("machining", cap_col)
+    render_weekly_bar_chart(weekly, "Week Label", "Hours Plan", y_max=y_max, capacity=machining_capacity, overdue_col="Overdue Hours")
     render_machine_table(filtered_df)
