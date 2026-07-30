@@ -544,6 +544,7 @@ def render_weekly_bar_chart(
     color="#2E86C1",
     highlight_week=True,
     capacity=None,
+    capacity_label="Capacity",
     show_75_line=True,
     capacity_borders=False,
     y_max=None,
@@ -616,7 +617,7 @@ def render_weekly_bar_chart(
             fig.add_trace(go.Bar(x=[None], y=[None], name=label, marker_color=col, showlegend=True))
 
     if capacity is not None:
-        cap_label = f"<b>Capacity £{capacity:,.0f}</b>" if text_format == "currency" else f"Capacity ({capacity})"
+        cap_label = f"<b>{capacity_label} £{capacity:,.0f}</b>" if text_format == "currency" else f"{capacity_label} ({capacity})"
         fig.add_hline(y=capacity, line=dict(color="red", width=4, dash="dash"),
                       annotation_text=cap_label, annotation_position="top right")
         if show_75_line:
