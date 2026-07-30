@@ -549,12 +549,14 @@ def render_weekly_bar_chart(
     show_75_line=True,
     capacity_borders=False,
     y_max=None,
+    y_min=None,
     y_title="Hours",
     x_title="Week Ending",
     text_col=None,
     text_format=None,
     hover_suffix="hours",
     overdue_col=None,
+    pattern_col=None,
 ):
     has_overdue = bool(overdue_col and overdue_col in df.columns and df[overdue_col].sum() > 0)
     use_capacity_colours = capacity is not None and not (isinstance(color, str) and color in df.columns)
@@ -581,6 +583,10 @@ def render_weekly_bar_chart(
         marker = dict(color=bar_colours, line=dict(color=border_colours, width=3))
     else:
         marker = dict(color=bar_colours, line=dict(width=0))
+
+    if pattern_col and pattern_col in df.columns:
+        pattern_shapes = df[pattern_col].apply(lambda flagged: "/" if flagged else "")
+        marker["pattern"] = dict(shape=pattern_shapes, fgcolor="rgba(0,0,0,0.35)", size=6, solidity=0.3)
 
     bar_text = df[text_col] if text_col else df[y_col].round(0)
     text_pos = "inside" if has_overdue else "outside"
@@ -630,13 +636,19 @@ def render_weekly_bar_chart(
         y_max if y_max is not None else df[y_col].max(),
         capacity if capacity is not None else 0,
     )
+    data_min = df[y_col].min()
+    effective_y_min = y_min if y_min is not None else (data_min * 1.1 if data_min < 0 else 0)
     fig.update_layout(
         height=500,
         barmode="stack" if has_overdue else "group",
-        margin=dict(l=40, r=40, t=40, b=40),
+        margin=dict(l=40, r=40, t=60, b=40),
         plot_bgcolor="rgba(0,0,0,0)",
         paper_bgcolor="rgba(0,0,0,0)",
-        yaxis=dict(title=y_title, gridcolor="rgba(0,0,0,0.05)", zeroline=False, range=[0, effective_y_max * 1.1]),
+        yaxis=dict(
+            title=y_title, gridcolor="rgba(0,0,0,0.05)",
+            zeroline=bool(effective_y_min < 0), zerolinecolor="rgba(0,0,0,0.3)", zerolinewidth=1,
+            range=[effective_y_min, effective_y_max * 1.2],
+        ),
         xaxis=dict(title=x_title, showgrid=False),
         showlegend=has_overdue or use_capacity_colours,
         font=dict(family="Segoe UI, sans-serif", size=13, color="#1a1a1a"),
