@@ -44,12 +44,3 @@ expiry_days = 5
 ```bash
 python -m streamlit run login.py
 ```
-
-## Screenshots
-<img width="754" height="449" alt="image" src="https://github.com/user-attachments/assets/1870d058-3b2d-4233-af57-8ba8a56a2a2d" />
-<img width="855" height="383" alt="image" src="https://github.com/user-attachments/assets/5c81a03c-4876-40dc-8b21-16662aeb833b" />
-<img width="752" height="241" alt="image" src="https://github.com/user-attachments/assets/90cb5390-f536-4d1b-9807-e6c14d5a23f1" />
-
-## Roadmap
-
-- Integrate directly with the Statii ERP API to replace manual Excel exports
