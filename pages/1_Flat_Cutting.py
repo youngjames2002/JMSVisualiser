@@ -12,6 +12,7 @@ if statii_toggle:
         st.rerun()
     st.title("Overview - Statii Data")
     df = statii_bundle_jobs("Laser - Flat")
+    df = df[df["customer_po_no"].str.contains("Link Arms") == False]
     df = clean_statii_bundle_data(df)
     df["Site"] = "Ballymena"
 
