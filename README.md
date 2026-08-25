@@ -126,31 +126,11 @@ DATABASE_PUBLIC_URL = ""
 python -m streamlit run login.py
 ```
 
-`DataVisualiser.bat` does the same thing from a desktop shortcut.
-
-## Notes on data sources
-
-- **Statii** — `get_statii_session_token()` authenticates against `/auth` and caches the
-  session token for 25 minutes. Reports used: `/report/scheduling` (open and completed
-  jobs), `/report/sales_order_lines` (paint, galv, Ballymena finishing) and
-  `/report/sales_orders` (order value by month).
-- **SharePoint** — MSAL client-credentials token → Microsoft Graph, downloading the Teams
-  tool workbooks (`Welding/Saw/Machining Schedule Teams Tool.xlsx`, `Rubber Lining Teams
-  Tool.xlsx`), the bundle staging sheet, and reading/writing `capacity_config.json`.
-- **Planner** — Graph `planner/plans/{id}/tasks`, used only for machining operation and
-  site labels.
-- All loaders are wrapped in `@st.cache_data`, so a page load does not re-hit the APIs
-  until the cache is cleared by "Refresh Data".
-
 ## Screenshots
-
 <img width="754" height="449" alt="image" src="https://github.com/user-attachments/assets/1870d058-3b2d-4233-af57-8ba8a56a2a2d" />
 <img width="855" height="383" alt="image" src="https://github.com/user-attachments/assets/5c81a03c-4876-40dc-8b21-16662aeb833b" />
 <img width="752" height="241" alt="image" src="https://github.com/user-attachments/assets/90cb5390-f536-4d1b-9807-e6c14d5a23f1" />
 
 ## Roadmap
 
-- Migrate the remaining Excel/Teams-tool sources (weld, saw, machining, rubber lining) onto
-  the Statii scheduling API, as already done for flat/tube/fold behind the toggle
-- Retire the bundle staging sheet once the Statii view is trusted, and drop the toggle
-- Move the weld site overrides out of a checked-in JSON file into an editable in-app table
+- Integrate directly with the Statii ERP API to replace manual Excel exports
