@@ -741,6 +741,11 @@ def clean_weld_saw_machine_data(df):
     clean_df["Week Ending"] = (
         pd.to_datetime(clean_df["Date Requested"]) + pd.offsets.Week(weekday=4)
     ).dt.strftime("%d/%m/%Y")
+    # "Time Planned" is an Excel formula in the source workbook, so pandas only sees
+    # its cached result. When the automation regenerates the file without a recalc,
+    # that cache is empty and the column reads blank. Derive it here instead.
+    clean_df["Hours Plan"] = pd.to_numeric(clean_df["Hours Plan"], errors="coerce").fillna(0)
+    clean_df["Time Planned"] = clean_df["Hours Plan"].apply(format_hours)
     return clean_df
 
 def clean_flat_data(df):
