@@ -706,7 +706,7 @@ def render_paint_next_week(weekly, capacity):
 def render_paint_table(weekly, df):
     st.markdown("## View Lines by Week")
     weeks = sorted(weekly["Week Due"].unique())
-    week_labels = {w: pd.to_datetime(w).strftime("%d %b") for w in weeks}
+    week_labels = {w: format_week_label(pd.to_datetime(w)) for w in weeks}
     selected_weeks = st.multiselect(
         "Filter By Week Due",
         options=weeks,

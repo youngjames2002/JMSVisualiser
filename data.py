@@ -7,6 +7,17 @@ import requests
 import json
 import re
 
+def format_week_label(dt):
+    """Format a date as '%d %b' (e.g. '05 Jan'), appending the year when it is
+    not the current calendar year (e.g. '05 Jan 2027'). Non-date values are
+    returned unchanged."""
+    if not hasattr(dt, "strftime"):
+        return dt
+    current_year = pd.Timestamp.today().year
+    if getattr(dt, "year", current_year) == current_year:
+        return dt.strftime("%d %b")
+    return dt.strftime("%d %b %Y")
+
 @st.cache_data(show_spinner=True)
 def get_machine_schedule_labels() -> pd.DataFrame:
     TENANT_ID = st.secrets["sharepoint"]["TENANT_ID"]
@@ -226,7 +237,7 @@ def clean_paint_data_from_api(api_response: dict) -> pd.DataFrame:
     df["Week Due"] = df["date_promised"].dt.to_period("W-FRI").apply(lambda r: r.end_time)
     current_week = pd.Timestamp.today().to_period("W-FRI").end_time
     df = df[df["Week Due"] >= current_week]
-    df["Week Label"] = df["Week Due"].dt.strftime("%d %b")
+    df["Week Label"] = df["Week Due"].apply(format_week_label)
     df = df.sort_values("Week Due", ascending=True)
 
     df = df.rename(columns={
@@ -258,7 +269,7 @@ def clean_galv_data(api_response: dict) -> pd.DataFrame:
     df["Week Due"] = df["date_promised"].dt.to_period("W-FRI").apply(lambda r: r.end_time)
     current_week = pd.Timestamp.today().to_period("W-FRI").end_time
     df = df[df["Week Due"] >= current_week]
-    df["Week Label"] = df["Week Due"].dt.strftime("%d %b")
+    df["Week Label"] = df["Week Due"].apply(format_week_label)
     df = df.sort_values("Week Due", ascending=True)
 
     df = df.rename(columns={
@@ -723,7 +734,7 @@ def clean_paint_data(df):
     df["Week Due"] = df["Date Promised"].dt.to_period("W-FRI").apply(lambda r: r.end_time)
     current_week = pd.Timestamp.today().to_period("W-FRI").end_time
     df = df[df["Week Due"] >= current_week]
-    df["Week Label"] = df["Week Due"].dt.strftime("%d %b")
+    df["Week Label"] = df["Week Due"].apply(format_week_label)
     df = df.sort_values("Week Due", ascending=True)
 
     return df

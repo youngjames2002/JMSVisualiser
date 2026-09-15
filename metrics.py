@@ -167,9 +167,7 @@ def build_paint_plot_data(day_week_toggle, df):
     # render graph
     weekly = plot_df.groupby(group_col)["Price"].sum().sort_index().reset_index()
     weekly["Description"] = df["Description"].copy()
-    weekly["Week Label"] = weekly[group_col].apply(
-        lambda x: x.strftime("%d %b") if hasattr(x, "strftime") else x
-    )
+    weekly["Week Label"] = weekly[group_col].apply(format_week_label)
     weekly["colour"] = "green"
 
     return weekly
@@ -395,7 +393,7 @@ def build_weld_chart_data(df, site):
             weekly = pd.concat([weekly, new_row]).sort_values("Week Ending").reset_index(drop=True)
 
     # Format label for display
-    weekly["Week Label"] = weekly["Week Ending"].dt.strftime("%d %b")
+    weekly["Week Label"] = weekly["Week Ending"].apply(format_week_label)
 
     # Expand y_max to account for the stacked overdue bar
     if not weekly.empty:
@@ -458,7 +456,7 @@ def build_machine_chart_data(df, operation=None):
             })
             weekly = pd.concat([weekly, new_row]).sort_values("Week Ending").reset_index(drop=True)
 
-    weekly["Week Label"] = weekly["Week Ending"].dt.strftime("%d %b")
+    weekly["Week Label"] = weekly["Week Ending"].apply(format_week_label)
 
     stacked_max = (weekly["Hours Plan"] + weekly["Overdue Hours"]).max()
     y_max = max(y_max, stacked_max)
@@ -500,7 +498,7 @@ def build_saw_chart_data(df):
             })
             weekly = pd.concat([weekly, new_row]).sort_values("Week Ending").reset_index(drop=True)
 
-    weekly["Week Label"] = weekly["Week Ending"].dt.strftime("%d %b")
+    weekly["Week Label"] = weekly["Week Ending"].apply(format_week_label)
     weekly["Hours"] = weekly["Hours Plan"].apply(format_hours)
     y_max = (weekly["Hours Plan"] + weekly["Overdue Hours"]).max() if not weekly.empty else 0
 
@@ -539,7 +537,7 @@ def build_tube_chart_data(df):
             })
             weekly = pd.concat([weekly, new_row]).sort_values("Week Ending").reset_index(drop=True)
 
-    weekly["Week Label"] = weekly["Week Ending"].dt.strftime("%d %b")
+    weekly["Week Label"] = weekly["Week Ending"].apply(format_week_label)
     weekly["Hours"] = weekly["Estimated Bundle Time (Hours)"].apply(format_hours)
 
     y_max = (weekly["Estimated Bundle Time (Hours)"] + weekly["Overdue Hours"]).max() if not weekly.empty else 0
@@ -576,7 +574,7 @@ def build_flat_chart_data(df, site):
     )
 
     # Format label for display
-    weekly["Week Label"] = weekly["Week Ending"].dt.strftime("%d %b")
+    weekly["Week Label"] = weekly["Week Ending"].apply(format_week_label)
     weekly["Hours"] = weekly["Estimated Bundle Time (Hours)"].apply(format_hours)
 
     return weekly, y_max
@@ -625,7 +623,7 @@ def build_fold_chart_data(df, site):
             })
             weekly = pd.concat([weekly, new_row]).sort_values("Week Ending").reset_index(drop=True)
 
-    weekly["Week Label"] = weekly["Week Ending"].dt.strftime("%d %b")
+    weekly["Week Label"] = weekly["Week Ending"].apply(format_week_label)
     weekly["Hours"] = weekly["Estimated Fold Time (Hours)"].apply(format_hours)
 
     if not weekly.empty:
