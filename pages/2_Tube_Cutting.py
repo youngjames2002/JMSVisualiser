@@ -33,7 +33,7 @@ if statii_toggle:
 
     # table
     filtered_df = weld_table_filters(df)
-    st.dataframe(filtered_df, column_config={"Date Requested": st.column_config.DateColumn("Date Requested", format="DD/MM/YY")})
+    st.dataframe(filtered_df, column_config={"Date Requested": st.column_config.DateColumn("Date Requested", format="DD/MM/YY")}, hide_index=True)
 
 else:
     st.title("Overview - Bundled Data")

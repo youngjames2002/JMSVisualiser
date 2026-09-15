@@ -8,7 +8,7 @@ stagingSheet = "C:\\Users\\james\\JMS Metaltec\\JMS Engineering Team - JMS Engin
 df = pd.read_excel(stagingSheet)
 
 st.title("test dashboard")
-st.dataframe(df)
+st.dataframe(df, hide_index=True)
 st.text(df['Estimated Bundle Time (Hours)'])
 st.text("TOTAL ESTIMATED BUNDLE HOURS - " + str(df["Estimated Bundle Time (Hours)"].sum()))
 

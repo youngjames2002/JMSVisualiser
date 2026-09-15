@@ -715,7 +715,7 @@ def render_paint_table(weekly, df):
         key="week_filter"
     )
     df_ts_week = df[df["Week Due"].isin(selected_weeks)]
-    st.dataframe(df_ts_week.drop(columns=df_ts_week.columns[-2]))
+    st.dataframe(df_ts_week.drop(columns=df_ts_week.columns[-2]), hide_index=True)
 
 
 def _kpi_card(col, title, value, card_class="black"):
@@ -809,19 +809,19 @@ def render_weld_table(df, site):
         else:
             df = df[df["Site"] == site]
     filtered_df = weld_table_filters(df)
-    st.dataframe(filtered_df, column_config={"Date Requested": st.column_config.DateColumn("Date Requested", format="DD/MM/YY")})
+    st.dataframe(filtered_df, column_config={"Date Requested": st.column_config.DateColumn("Date Requested", format="DD/MM/YY")}, hide_index=True)
 
 def render_machine_table(df):
     filtered_df = machine_table_filters(df)
-    st.dataframe(filtered_df)
+    st.dataframe(filtered_df, hide_index=True)
 
 def render_tube_table(df):
     filtered_df = tube_table_filters(df)
-    st.dataframe(filtered_df)
+    st.dataframe(filtered_df, hide_index=True)
 
 def render_fold_table(df, site):
     df = fold_table_filters(df, site)
-    st.dataframe(df)
+    st.dataframe(df, hide_index=True)
 
 def page_setup(title):
     """
@@ -855,4 +855,4 @@ def render_bmena_finish_pie(df):
     # other
     st.markdown("## Other")
     other_df = df[df["Finish Type"] == "Other"]
-    st.dataframe(other_df)
+    st.dataframe(other_df, hide_index=True)
