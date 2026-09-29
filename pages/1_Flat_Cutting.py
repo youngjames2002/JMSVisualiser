@@ -41,18 +41,30 @@ else:
     df = df[df["Type"]=="FLAT"]
     df = clean_flat_data(df)
     df["Site"] = "Ballymena"
-    kpi_df = build_tube_kpis(df)
-    weekly, y_max = build_tube_chart_data(df)
-
+    df["Machine Group"] = None
+    for machine in ["Regius", "Ensis"]:
+        df.loc[df["Machine"].str.contains(machine, case=False, na=False), "Machine Group"] = machine
 
     # KPIS HERE
-    render_saw_bundle_kpi(kpi_df, "late")
-    render_saw_bundle_kpi(kpi_df, "this")
-    render_saw_bundle_kpi(kpi_df, "next")
+    kpi_df = build_flat_machine_kpis(df)
+    for kpicol, machine in zip(st.columns(2), ["Regius", "Ensis"]):
+        kpicol.title(machine)
+        for period in ["late", "this", "next"]:
+            render_kpi_card(kpi_df, "Machine Group", machine, period, kpicol)
+
+    # fixed graph scale from both machines (before machine filter)
+    _, y_max = build_tube_chart_data(df)
+    machine_option = st.selectbox("Machine", ["Both", "Regius", "Ensis"], key="bundle_machine")
+    if machine_option != "Both":
+        df = df[df["Machine Group"] == machine_option]
+    weekly, _ = build_tube_chart_data(df)
 
     # chart here
     cap_col, _ = st.columns([1, 5])
     capacity = capacity_input("flat_cutting", cap_col)
+    y_max = max(y_max, capacity)
+    if machine_option != "Both":
+        capacity = int(capacity // 2)
     render_weekly_bar_chart(
         weekly, "Week Label", "Estimated Bundle Time (Hours)",
         capacity=capacity, show_75_line=True,

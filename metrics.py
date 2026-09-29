@@ -335,6 +335,10 @@ def build_flat_kpis(df):
     return _build_site_kpis(df, group_col="Site", hours_col="Estimated Bundle Time (Hours)")
 
 
+def build_flat_machine_kpis(df):
+    return _build_site_kpis(df, group_col="Machine Group", hours_col="Estimated Bundle Time (Hours)")
+
+
 def build_machine_kpis(df):
     return _build_site_kpis(df, group_col="Operation", hours_col="Hours Plan")
 
