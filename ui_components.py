@@ -532,6 +532,111 @@ def render_logo(col):
     col.image(logo, width=500)
 
 
+OVERDUE_RED = "#B03A2E"
+_OVERDUE_PATTERN = dict(shape="/", fgcolor=OVERDUE_RED, size=7, solidity=0.55)
+
+
+def render_stacked_weekly_bar_chart(
+    df,
+    x_col,
+    y_col,
+    group_col,
+    group_colours,
+    *,
+    capacity=None,
+    show_75_line=True,
+    y_max=None,
+    y_title="Hours",
+    x_title="Week Ending",
+    hover_suffix="hours",
+    overdue_col=None,
+):
+    """
+    Weekly bars stacked by group_col, one colour per group (group_colours: {group: colour}).
+    Overdue hours sit on top of the stack in the group colour, with red hatching and outline.
+    Week totals go above each bar, in red when over capacity.
+    Expects df to hold every (week, group) pair, e.g. from build_grouped_saw_chart_data.
+    """
+    has_overdue = bool(overdue_col and overdue_col in df.columns and df[overdue_col].sum() > 0)
+    fig = go.Figure()
+
+    for group, colour in group_colours.items():
+        group_df = df[df[group_col] == group]
+        fig.add_trace(go.Bar(
+            x=group_df[x_col], y=group_df[y_col],
+            name=group, legendgroup=group,
+            hovertemplate=f"<b>%{{x}}</b><br>{group}: %{{y:.0f}} {hover_suffix}<extra></extra>",
+            marker=dict(color=colour, line=dict(width=0)),
+        ))
+
+    # overdue added after all on-time traces so it forms one block at the top of the stack
+    if has_overdue:
+        for group, colour in group_colours.items():
+            group_df = df[df[group_col] == group]
+            fig.add_trace(go.Bar(
+                x=group_df[x_col], y=group_df[overdue_col],
+                name=f"{group} overdue", legendgroup=group, showlegend=False,
+                hovertemplate=f"<b>%{{x}}</b><br>{group}: %{{y:.0f}} overdue {hover_suffix}<extra></extra>",
+                marker=dict(color=colour, pattern=_OVERDUE_PATTERN, line=dict(width=0)),
+            ))
+        # legend key for the hatching, since per-group overdue traces are hidden from the legend
+        fig.add_trace(go.Bar(
+            x=[None], y=[None], name="Overdue",
+            marker=dict(color="white", pattern=_OVERDUE_PATTERN, line=dict(width=0)),
+        ))
+
+    # week totals above each stack, with the overdue share called out
+    on_time = df.groupby(x_col, sort=False)[y_col].sum()
+    overdue = df.groupby(x_col, sort=False)[overdue_col].sum() if has_overdue else on_time * 0
+    totals = on_time + overdue
+    labels = []
+    for total, late in zip(totals.values, overdue.values):
+        if total <= 0:
+            labels.append("")
+            continue
+        label = f"<b>{format_hours(total)}</b>"
+        if capacity is not None and total > capacity:
+            label = f"<span style='color:red'>{label}</span>"
+        if late > 0:
+            label += f"<br><span style='color:{OVERDUE_RED}'>+{late:.0f} overdue</span>"
+        labels.append(label)
+    fig.add_trace(go.Scatter(
+        x=totals.index, y=totals.values,
+        mode="text", text=labels,
+        textposition="top center", showlegend=False, hoverinfo="skip",
+    ))
+
+    if capacity is not None:
+        # xanchor="right" keeps the label inside the plot instead of spilling past the edge
+        fig.add_hline(y=capacity, line=dict(color="red", width=3, dash="dash"),
+                      annotation_text=f"Capacity ({capacity})", annotation_position="top right",
+                      annotation_xanchor="right")
+        if show_75_line:
+            fig.add_hline(y=int(capacity * 0.75), line=dict(color="pink", width=3, dash="dash"),
+                          annotation_text=f"75% Capacity ({int(capacity * 0.75)})",
+                          annotation_position="top right", annotation_xanchor="right")
+
+    effective_y_max = max(
+        y_max if y_max is not None else (totals.max() if not totals.empty else 0),
+        capacity if capacity is not None else 0,
+    )
+    fig.update_layout(
+        height=500,
+        barmode="stack",
+        margin=dict(l=40, r=40, t=60, b=40),
+        plot_bgcolor="rgba(0,0,0,0)",
+        paper_bgcolor="rgba(0,0,0,0)",
+        # headroom for the two-line total label
+        yaxis=dict(title=y_title, gridcolor="rgba(0,0,0,0.05)", range=[0, effective_y_max * 1.25]),
+        xaxis=dict(title=x_title, showgrid=False),
+        showlegend=True,
+        # horizontal legend above the plot so it never runs off the right edge
+        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="left", x=0),
+        font=dict(family="Segoe UI, sans-serif", size=13, color="#1a1a1a"),
+    )
+    st.plotly_chart(fig, use_container_width=True)
+
+
 def _this_week_label():
     today = pd.Timestamp.today().normalize()
     return (today + pd.offsets.Week(weekday=4)).strftime("%d %b")

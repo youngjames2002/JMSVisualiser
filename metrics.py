@@ -339,6 +339,10 @@ def build_flat_machine_kpis(df):
     return _build_site_kpis(df, group_col="Machine Group", hours_col="Estimated Bundle Time (Hours)")
 
 
+def build_flat_statii_machine_kpis(df):
+    return _build_site_kpis(df, group_col="Machine Group", hours_col="Hours Plan")
+
+
 def build_machine_kpis(df):
     return _build_site_kpis(df, group_col="Operation", hours_col="Hours Plan")
 
@@ -508,6 +512,35 @@ def build_saw_chart_data(df):
 
     return weekly, y_max
 
+def build_grouped_saw_chart_data(df, group_col, groups):
+    """
+    Per-group version of build_saw_chart_data. Every group gets a row for every week
+    present in any group (zero-filled), so the x axis stays identical whichever
+    group is shown. y_max is the tallest stacked week across all groups.
+    """
+    frames = []
+    for group in groups:
+        group_weekly, _ = build_saw_chart_data(df[df[group_col] == group])
+        group_weekly[group_col] = group
+        frames.append(group_weekly)
+    weekly = pd.concat(frames, ignore_index=True)
+
+    all_weeks = sorted(weekly["Week Ending"].dropna().unique())
+    full_index = pd.MultiIndex.from_product([all_weeks, groups], names=["Week Ending", group_col])
+    weekly = (
+        weekly.set_index(["Week Ending", group_col])[["Hours Plan", "Overdue Hours"]]
+        .reindex(full_index, fill_value=0)
+        .reset_index()
+    )
+
+    weekly["Week Label"] = weekly["Week Ending"].apply(format_week_label)
+    # blank label on zero-filled weeks so empty bars don't show "0h 0m"
+    weekly["Hours"] = weekly["Hours Plan"].apply(lambda h: format_hours(h) if h > 0 else "")
+    week_totals = weekly.groupby("Week Ending")[["Hours Plan", "Overdue Hours"]].sum().sum(axis=1)
+    y_max = week_totals.max() if not week_totals.empty else 0
+
+    return weekly, y_max
+
 def build_tube_chart_data(df):
     df = df.copy()
 
@@ -637,7 +670,7 @@ def build_fold_chart_data(df, site):
     return weekly, y_max
     
 
-def weld_table_filters(df):
+def weld_table_filters(df, extra_cols=None):
     # filter by week ending
     weeks_dt = sorted(
         pd.to_datetime(df["Week Ending"], dayfirst=True).dropna().unique()
@@ -674,7 +707,7 @@ def weld_table_filters(df):
             "Date Requested",
             "Week Ending",
             "Site"
-        ]
+        ] + (extra_cols or [])
     ]
     filtered_df = filtered_df.sort_values("Date Requested", ascending=True)
 

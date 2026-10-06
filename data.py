@@ -166,6 +166,7 @@ def statii_bundle_jobs(operation):
         },
         params={"filters": json.dumps({"live": True})},
     )
+    response.raise_for_status()
     data = response.json()["ResponseBody"]["data"]
     df = pd.DataFrame(data["rows"], columns=data["columns"])
     return df[df["operation"] == operation]
@@ -774,6 +775,35 @@ def clean_flat_data(df):
     # clean up hours for visuals
     clean_df["Hours"] = clean_df["Estimated Bundle Time (Hours)"].apply(format_hours)
     return clean_df
+
+FLAT_MACHINES = ["Regius", "Ensis"]
+FLAT_NOT_BUNDLED = "Not Bundled"
+
+def add_flat_machine_group(df, machine_col="Machine"):
+    # normalise free-text machine names to Regius / Ensis (None if neither)
+    df = df.copy()
+    df["Machine Group"] = None
+    for machine in FLAT_MACHINES:
+        df.loc[df[machine_col].str.contains(machine, case=False, na=False), "Machine Group"] = machine
+    return df
+
+def flat_so_machine_map(bundle_df):
+    # one row per sales order -> machine, from the bundle sheet's newline-separated SO lists.
+    # includes completed bundles, since the Statii job can still be open after the bundle is ticked off.
+    so_df = add_flat_machine_group(bundle_df)[["Sales Orders Included in Bundle", "Machine Group"]]
+    # tolerate "SO - 026586" spacing and skip non-SO entries like "B416"
+    so_df["S.O. No."] = so_df["Sales Orders Included in Bundle"].astype(str).str.findall(r"SO\s*-\s*(\d+)")
+    so_df = so_df.explode("S.O. No.").dropna(subset=["S.O. No.", "Machine Group"])
+    so_df["S.O. No."] = "SO-" + so_df["S.O. No."]
+    # if an SO is ever bundled on both machines, the most recently added bundle wins
+    return so_df.drop_duplicates("S.O. No.", keep="last")[["S.O. No.", "Machine Group"]]
+
+def assign_statii_flat_machine(statii_df, bundle_df):
+    # expects statii_df already run through clean_statii_bundle_data (has "S.O. No.")
+    so_map = flat_so_machine_map(bundle_df)
+    df = statii_df.merge(so_map, on="S.O. No.", how="left")
+    df["Machine Group"] = df["Machine Group"].fillna(FLAT_NOT_BUNDLED)
+    return df
 
 def clean_fold_data(df):
     clean_df = df.copy()
