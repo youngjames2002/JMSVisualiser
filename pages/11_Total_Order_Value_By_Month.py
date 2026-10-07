@@ -24,7 +24,7 @@ render_weekly_bar_chart(
 )
 
 st.subheader("Actual Delivered Value")
-st.markdown("_Displays All Sales Orders present on Statii and their Value, grouped by Month on SO Date Completed, fitlering out incomplete jobs_")
+st.markdown("_Displays All Sales Orders present on Statii and their Value, grouped by Month on SO Date Completed, filtering out incomplete jobs_")
 
 value_by_month_completed = build_order_value_by_month(all_so, filter_date, date_column="date_completed")
 value_by_month_completed = align_value_by_month(value_by_month_completed, value_by_month_promised)
