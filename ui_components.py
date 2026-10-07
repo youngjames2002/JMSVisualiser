@@ -533,7 +533,18 @@ def render_logo(col):
 
 
 OVERDUE_RED = "#B03A2E"
-_OVERDUE_PATTERN = dict(shape="/", fgcolor=OVERDUE_RED, size=7, solidity=0.55)
+
+
+def _tint(hex_colour, amount=0.6):
+    # mix a hex colour towards white; amount=0 is unchanged, 1 is white
+    r, g, b = (int(hex_colour.lstrip("#")[i:i + 2], 16) for i in (0, 2, 4))
+    r, g, b = (round(c + (255 - c) * amount) for c in (r, g, b))
+    return f"#{r:02X}{g:02X}{b:02X}"
+
+
+def _overdue_pattern(hex_colour):
+    # tone-on-tone hatching: the group's own colour drawn over its light tint
+    return dict(shape="/", fgcolor=hex_colour, bgcolor=_tint(hex_colour), size=8, solidity=0.3)
 
 
 def render_stacked_weekly_bar_chart(
@@ -553,12 +564,15 @@ def render_stacked_weekly_bar_chart(
 ):
     """
     Weekly bars stacked by group_col, one colour per group (group_colours: {group: colour}).
-    Overdue hours sit on top of the stack in the group colour, with red hatching and outline.
-    Week totals go above each bar, in red when over capacity.
+    Overdue hours sit on top of the stack as a lighter tint of each group colour, hatched in
+    that same colour, so the backlog still reads per group; the red "+N overdue" label carries
+    the urgency. Week totals go above each bar, in red when over capacity.
     Expects df to hold every (week, group) pair, e.g. from build_grouped_saw_chart_data.
     """
     has_overdue = bool(overdue_col and overdue_col in df.columns and df[overdue_col].sum() > 0)
     fig = go.Figure()
+    # thin white edge = a gap between stacked segments, so neighbouring colours don't run together
+    segment_gap = dict(color="white", width=1.5)
 
     for group, colour in group_colours.items():
         group_df = df[df[group_col] == group]
@@ -566,7 +580,7 @@ def render_stacked_weekly_bar_chart(
             x=group_df[x_col], y=group_df[y_col],
             name=group, legendgroup=group,
             hovertemplate=f"<b>%{{x}}</b><br>{group}: %{{y:.0f}} {hover_suffix}<extra></extra>",
-            marker=dict(color=colour, line=dict(width=0)),
+            marker=dict(color=colour, line=segment_gap),
         ))
 
     # overdue added after all on-time traces so it forms one block at the top of the stack
@@ -577,12 +591,12 @@ def render_stacked_weekly_bar_chart(
                 x=group_df[x_col], y=group_df[overdue_col],
                 name=f"{group} overdue", legendgroup=group, showlegend=False,
                 hovertemplate=f"<b>%{{x}}</b><br>{group}: %{{y:.0f}} overdue {hover_suffix}<extra></extra>",
-                marker=dict(color=colour, pattern=_OVERDUE_PATTERN, line=dict(width=0)),
+                marker=dict(color=_tint(colour), pattern=_overdue_pattern(colour), line=segment_gap),
             ))
         # legend key for the hatching, since per-group overdue traces are hidden from the legend
         fig.add_trace(go.Bar(
             x=[None], y=[None], name="Overdue",
-            marker=dict(color="white", pattern=_OVERDUE_PATTERN, line=dict(width=0)),
+            marker=dict(color=_tint("#7F8C8D"), pattern=_overdue_pattern("#7F8C8D"), line=dict(width=0)),
         ))
 
     # week totals above each stack, with the overdue share called out
