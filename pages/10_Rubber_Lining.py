@@ -9,7 +9,7 @@ if st.button("Refresh Data"):
     st.rerun()
 
 df = load_data_rubber_sp()
-df = remove_completed_jobs_statii(df, "rubber lining")
+df = remove_finished_jobs(df, "rubber lining")
 
 clean_df = clean_weld_saw_machine_data(df)
 kpi_df = build_saw_kpis(clean_df)

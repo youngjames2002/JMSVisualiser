@@ -18,13 +18,47 @@ def format_week_label(dt):
         return dt.strftime("%d %b")
     return dt.strftime("%d %b %Y")
 
+# Teams (Planner) board for each schedule's cards
+PLANNER_PLAN_IDS = {
+    "saw":           "k2b_C6ET0kStaiMMo7gl9ZYAF1tx",
+    "weld":          "p2WyRZRaREK79wdZXZGwapYACiri",
+    "machine":       "OMiGy-Z9OE2SZd14RwvvfJYAAeYC",
+    "rubber lining": "yns3A-EHBEGcravGTjeGIpYAB2D7",
+}
+
 @st.cache_data(show_spinner=True)
-def get_machine_schedule_labels() -> pd.DataFrame:
+def get_planner_tasks(plan_id: str) -> list:
+    # every card on a Planner board, completed ones included
     TENANT_ID = st.secrets["sharepoint"]["TENANT_ID"]
     CLIENT_ID = st.secrets["sharepoint"]["CLIENT_ID"]
     CLIENT_SECRET = st.secrets["sharepoint"]["CLIENT_SECRET"]
-    PLAN_ID = "OMiGy-Z9OE2SZd14RwvvfJYAAeYC"
 
+    app = msal.ConfidentialClientApplication(
+        client_id=CLIENT_ID,
+        authority=f"https://login.microsoftonline.com/{TENANT_ID}",
+        client_credential=CLIENT_SECRET
+    )
+    token = app.acquire_token_for_client(scopes=["https://graph.microsoft.com/.default"])
+
+    if "access_token" not in token:
+        st.error(f"Planner auth failed: {token.get('error_description')}")
+        return []
+
+    headers = {"Authorization": f"Bearer {token['access_token']}"}
+
+    # graph pages large boards, keep following nextLink until all cards are loaded
+    tasks = []
+    url = f"https://graph.microsoft.com/v1.0/planner/plans/{plan_id}/tasks"
+    while url:
+        tasks_resp = requests.get(url, headers=headers)
+        tasks_resp.raise_for_status()
+        body = tasks_resp.json()
+        tasks.extend(body["value"])
+        url = body.get("@odata.nextLink")
+    return tasks
+
+@st.cache_data(show_spinner=True)
+def get_machine_schedule_labels() -> pd.DataFrame:
     OPERATION_CATEGORIES = {
         "category1": "CNC Milling",
         "category2": "Csking/Drilling",
@@ -38,25 +72,7 @@ def get_machine_schedule_labels() -> pd.DataFrame:
         "category23": "Ballymena",
     }
 
-    app = msal.ConfidentialClientApplication(
-        client_id=CLIENT_ID,
-        authority=f"https://login.microsoftonline.com/{TENANT_ID}",
-        client_credential=CLIENT_SECRET
-    )
-    token = app.acquire_token_for_client(scopes=["https://graph.microsoft.com/.default"])
-
-    if "access_token" not in token:
-        st.error(f"Planner auth failed: {token.get('error_description')}")
-        return pd.DataFrame()
-
-    headers = {"Authorization": f"Bearer {token['access_token']}"}
-
-    tasks_resp = requests.get(
-        f"https://graph.microsoft.com/v1.0/planner/plans/{PLAN_ID}/tasks",
-        headers=headers
-    )
-    tasks_resp.raise_for_status()
-    tasks = tasks_resp.json()["value"]
+    tasks = get_planner_tasks(PLANNER_PLAN_IDS["machine"])
 
     rows = []
     for task in tasks:
@@ -73,11 +89,16 @@ def get_machine_schedule_labels() -> pd.DataFrame:
                 site = v
                 break
 
+        is_open = task.get("percentComplete") != 100
         operations = [OPERATION_CATEGORIES[k] for k in applied if k in OPERATION_CATEGORIES]
         for operation in operations:
-            rows.append({"S.O. No.": so, "Operation": operation, "Site": site})
+            rows.append({"S.O. No.": so, "Operation": operation, "Site": site, "open": is_open})
 
-    return pd.DataFrame(rows)
+    # one label per SO + operation so the page merge can't duplicate rows; an SO can have
+    # several cards (e.g. an old completed one), so prefer an open card's site
+    labels = pd.DataFrame(rows, columns=["S.O. No.", "Operation", "Site", "open"])
+    labels = labels.sort_values("open", ascending=False).drop_duplicates(["S.O. No.", "Operation"])
+    return labels.drop(columns=["open"])
 
 @st.cache_data(ttl=1500)
 def get_statii_session_token() -> str:
@@ -155,7 +176,8 @@ def statii_galv_data():
     return data
     
 @st.cache_data(show_spinner=True)
-def statii_bundle_jobs(operation):
+def statii_live_scheduling():
+    # live scheduling report, fetched once and shared by flat/tube/folding
     BASE_URL     = st.secrets["statii"]["BASE_URL"]
     token = get_statii_session_token()
     response = requests.get(
@@ -168,7 +190,10 @@ def statii_bundle_jobs(operation):
     )
     response.raise_for_status()
     data = response.json()["ResponseBody"]["data"]
-    df = pd.DataFrame(data["rows"], columns=data["columns"])
+    return pd.DataFrame(data["rows"], columns=data["columns"])
+
+def statii_bundle_jobs(operation):
+    df = statii_live_scheduling()
     return df[df["operation"] == operation]
 
 def clean_statii_bundle_data(df: pd.DataFrame) -> pd.DataFrame:
@@ -205,22 +230,6 @@ def clean_statii_bundle_data(df: pd.DataFrame) -> pd.DataFrame:
     ).dt.strftime("%d/%m/%Y")
 
     return df
-
-@st.cache_data(show_spinner=True)
-def statii_completed_jobs():
-    BASE_URL     = st.secrets["statii"]["BASE_URL"]
-    token = get_statii_session_token()
-    response = requests.get(
-        f"{BASE_URL}/report/scheduling",
-        headers={
-            "Authorization": f"Bearer {token}",
-            "Accept": "application/json",
-        },
-        params={"filters": json.dumps({"status": "Complete"})},
-    )
-    response.raise_for_status()
-    data = response.json()["ResponseBody"]["data"]
-    return data
 
 def clean_paint_data_from_api(api_response: dict) -> pd.DataFrame:
     df = pd.DataFrame(api_response["rows"], columns=api_response["columns"])
@@ -832,34 +841,19 @@ def remove_completed_jobs(df, resource):
 
     return df
 
-# Maps each schedule key to the Statii column and value used to identify completed jobs.
-# "col" is the Statii scheduling report column to filter on ("resource" or "operation").
-# "value" is the string to match (case-insensitive, partial match).
-STATII_FILTER_MAP = {
-    "saw":           {"col": "resource",  "value": "Saw"},
-    "weld":          {"col": "resource",  "value": "Welding"},
-    "machine":       {"col": "resource",  "value": "Machining"},
-    "rubber lining": {"col": "operation", "value": "Rubber lining"},
-    # operation values confirmed from /report/scheduling API — verify tube/fold if names differ
-    "flat":          {"col": "operation", "value": "Laser - Flat"},
-    "tube":          {"col": "operation", "value": "Laser - Tube"},
-    "fold":          {"col": "operation", "value": "Brake Press"},
-}
+def remove_finished_jobs(df, resource):
+    # a row is finished if its Teams card is marked complete OR its operation is no longer
+    # live in Statii (completed/cancelled). Teams lets users clear a job straight away;
+    # Statii catches cards that were never ticked or failed to create (PlannerTaskID "ERROR").
+    # Number is per operation (WO-xxxxxx/nnn). Rows with no Number aren't checked against Statii.
+    tasks = get_planner_tasks(PLANNER_PLAN_IDS[resource])
+    completed_cards = {t["id"] for t in tasks if t.get("percentComplete") == 100}
+    card_done = df["PlannerTaskID"].astype(str).isin(completed_cards)
 
-def remove_completed_jobs_statii(df, resource):
-    completed_data = statii_completed_jobs()
-    if not completed_data or not completed_data.get("rows"):
-        return df
-    completed_df = pd.DataFrame(completed_data["rows"], columns=completed_data["columns"])
-    if "number" not in completed_df.columns:
-        return df
-    filter_cfg = STATII_FILTER_MAP.get(resource)
-    if filter_cfg:
-        col, value = filter_cfg["col"], filter_cfg["value"]
-        if col in completed_df.columns:
-            completed_df = completed_df[completed_df[col].str.contains(value, case=False, na=False)]
-    completed_numbers = set(completed_df["number"].dropna().astype(str))
-    return df[~df["Number"].astype(str).isin(completed_numbers)]
+    live_numbers = set(statii_live_scheduling()["number"].dropna().astype(str))
+    statii_done = df["Number"].notna() & ~df["Number"].astype(str).isin(live_numbers)
+
+    return df[~(card_done | statii_done)]
 
 def format_hours(hours):
     if hours != hours:  # NaN check

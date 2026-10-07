@@ -69,15 +69,19 @@ def _split_csv(val):
     return [v.strip() for v in stripped.split(",") if v.strip()]
 
 
-def load_ncr_data(conn):
-    df = pd.read_sql_query("SELECT * FROM ncr_log ORDER BY id DESC", conn)
+@st.cache_data(ttl=300, show_spinner=True)
+def load_ncr_data():
+    conn = get_connection()
+    try:
+        df = pd.read_sql_query("SELECT * FROM ncr_log ORDER BY id DESC", conn)
+        cf = pd.read_sql_query("SELECT * FROM causal_factors", conn)
+    finally:
+        conn.close()
 
     df = df.drop(columns=[
         "department", "root_cause", "suggested_corrective_action",
         "corrective_action_delegated_to", "corrective_action_due_date",
     ], errors="ignore")
-
-    cf = pd.read_sql_query("SELECT * FROM causal_factors", conn)
 
     if cf.empty:
         df["department"]        = [[] for _ in range(len(df))]
@@ -535,7 +539,7 @@ def render_completion_stats(df):
     st.progress(rtc_pct, f"Returned to customer: {rtc_done} of {total} ({int(rtc_pct * 100)}%)")
 
 
-def render_ncr_table(df, conn, names, customers, departments, delegated):
+def render_ncr_table(df, names, customers, departments, delegated):
     st.markdown('<div class="section-heading">Full NCR Log</div>', unsafe_allow_html=True)
     st.caption("Click any cell to edit inline, then press Save Changes to write to the database.")
 
@@ -591,18 +595,23 @@ def render_ncr_table(df, conn, names, customers, departments, delegated):
         if st.button("💾 Save Changes"):
             reverse_map = {v: k for k, v in DISPLAY_COLS.items()}
             edited_orig = edited_display.rename(columns=reverse_map).set_index("id")
-            cur = conn.cursor()
-            editable_cols = [c for c in edited_orig.columns if c != "id" and c not in CF_DISPLAY_COLS]
-            for row_id, row in edited_orig.iterrows():
-                for col in editable_cols:
-                    val = row[col]
-                    if isinstance(val, list):
-                        val = str(val)
-                    cur.execute(
-                        f'UPDATE ncr_log SET "{col}" = %s WHERE id = %s',
-                        (val, row_id),
-                    )
-            conn.commit()
+            conn = get_connection()
+            try:
+                cur = conn.cursor()
+                editable_cols = [c for c in edited_orig.columns if c != "id" and c not in CF_DISPLAY_COLS]
+                for row_id, row in edited_orig.iterrows():
+                    for col in editable_cols:
+                        val = row[col]
+                        if isinstance(val, list):
+                            val = str(val)
+                        cur.execute(
+                            f'UPDATE ncr_log SET "{col}" = %s WHERE id = %s',
+                            (val, row_id),
+                        )
+                conn.commit()
+            finally:
+                conn.close()
+            load_ncr_data.clear()
             st.success("Database updated successfully.")
     with col2:
         if st.button("🔄 Refresh"):

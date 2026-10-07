@@ -43,8 +43,8 @@ Common behaviour across the schedule pages:
   written to `capacity_config.json` on SharePoint, so they persist across restarts and
   redeploys for all users.
 - **Refresh Data** — clears the Streamlit data cache and re-pulls every source.
-- **Completed-job filtering** — jobs marked complete in Statii are removed from the
-  SharePoint-sourced schedules (`remove_completed_jobs_statii`).
+- **Completed-job filtering** — a job leaves the SharePoint-sourced schedules once its Teams
+  card is marked complete or its operation is no longer live in Statii (`remove_finished_jobs`).
 
 ## Project layout
 

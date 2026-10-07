@@ -9,7 +9,7 @@ if st.button("Refresh Data"):
     st.rerun()
 
 df = load_data_machine_sp()
-df = remove_completed_jobs_statii(df, "machine")
+df = remove_finished_jobs(df, "machine")
 clean_df = clean_weld_saw_machine_data(df)
 
 # site logic from teams labels

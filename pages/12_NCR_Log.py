@@ -37,8 +37,7 @@ def main():
 
     date_filter = render_date_filter()
 
-    conn = get_connection()
-    df   = load_ncr_data(conn)
+    df = load_ncr_data()
     df = df[(df["date"] >= date_filter) | (df["date"].isna())]
 
     render_page_header(date_filter)
@@ -49,9 +48,7 @@ def main():
     render_breakdown_section(df, customers, departments)
     render_so_and_weekly(df, date_filter)
     render_completion_stats(df)
-    render_ncr_table(df, conn, names, customers, departments, delegated)
-
-    conn.close()
+    render_ncr_table(df, names, customers, departments, delegated)
 
 
 main()

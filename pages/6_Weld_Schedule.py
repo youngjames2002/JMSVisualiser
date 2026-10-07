@@ -21,7 +21,7 @@ if st.button("Refresh Data"):
     st.rerun()
 
 df = load_data_weld_sp()
-df = remove_completed_jobs_statii(df, "weld")
+df = remove_finished_jobs(df, "weld")
 
 clean_df = clean_weld_saw_machine_data(df)
 
