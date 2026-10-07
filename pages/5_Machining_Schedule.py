@@ -17,6 +17,8 @@ site_option = st.selectbox("Site", ["Both Sites", "No Site Assigned", "Ballymena
 clean_df = clean_df.drop(columns=["Site"])  # drop the old Bamford-based Site
 clean_df = clean_df.merge(get_machine_schedule_labels(), on=["S.O. No.", "Operation"], how="left")
 clean_df["Site"] = clean_df["Site"].fillna("No Site Assigned")
+# fixed y scale from every site and operation, so the axis doesn't move with the filters
+_, y_max = build_machine_chart_data(clean_df, sorted(clean_df["Operation"].dropna().unique()))
 if site_option != "Both Sites":
     clean_df = clean_df[clean_df["Site"] == site_option]
 
@@ -42,7 +44,7 @@ filtered_df = clean_df[
 ]
 
 # chart by week
-weekly, y_max = build_machine_chart_data(clean_df, operation_filter)
+weekly, _ = build_machine_chart_data(clean_df, operation_filter)
 if weekly.empty:
     st.warning("No data selected")
 else:

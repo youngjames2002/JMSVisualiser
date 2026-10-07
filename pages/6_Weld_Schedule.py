@@ -73,7 +73,10 @@ else:
     capacity = None
 
 # chart by week
-weekly, y_max = build_weld_chart_data(clean_df, site)
+weekly, _ = build_weld_chart_data(clean_df, site)
+# fixed y scale: "Total" covers every site option, and the axis must also fit the largest capacity line
+_, y_max = build_weld_chart_data(clean_df, None)
+y_max = max(y_max, get_capacity("weld_kilrea") + get_capacity("weld_ballymena"))
 render_weekly_bar_chart(weekly, "Week Label", "Hours Plan", y_max=y_max, capacity=capacity, overdue_col="Overdue Hours")
 
 render_weld_table(clean_df, site)

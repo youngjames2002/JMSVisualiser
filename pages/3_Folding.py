@@ -34,10 +34,14 @@ if statii_toggle:
     max_capacity = capacity_input("folding", cap_col)
     capacity = max_capacity * 2 if site_option == "Both Sites" else max_capacity
 
+    # fixed y scale from both sites (covers every option) and the "Both Sites" capacity line
+    _, y_max = build_saw_chart_data(df)
+    y_max = max(y_max, max_capacity * 2)
+
     # build and render chart
     if site is not None:
         df = df[df["Site"] == site]
-    weekly, y_max = build_saw_chart_data(df)
+    weekly, _ = build_saw_chart_data(df)
     render_weekly_bar_chart(
         weekly, "Week Label", "Hours Plan",
         capacity=capacity, show_75_line=True,
@@ -74,8 +78,10 @@ else:
     capacity = max_capacity * 2 if site_option == "Both Sites" else max_capacity
 
     # chart here
-    weekly, y_max = build_fold_chart_data(clean_df, site)
-    y_max = max(y_max, max_capacity)
+    weekly, _ = build_fold_chart_data(clean_df, site)
+    # fixed y scale from both sites (covers every option) and the "Both Sites" capacity line
+    _, y_max = build_fold_chart_data(clean_df, None)
+    y_max = max(y_max, max_capacity * 2)
     render_weekly_bar_chart(
         weekly, "Week Label", "Estimated Fold Time (Hours)",
         capacity=capacity, show_75_line=True,
